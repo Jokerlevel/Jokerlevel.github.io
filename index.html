@@ -2,19 +2,19 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>给她的小宇宙 ✨</title>
+  <title>LM × Z.Z.L 的小宇宙 ✨</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="site-header">
-    <div class="logo">J &amp; H</div>
+    <div class="logo">LM × Z.Z.L</div>
     <nav class="nav">
       <button class="nav-btn active" data-target="home">首页</button>
       <button class="nav-btn" data-target="album">回忆相册</button>
       <button class="nav-btn" data-target="quiz">默契挑战</button>
-      <button class="nav-btn" data-target="game">抓住我</button>
-      <button class="nav-btn" data-target="future">未来清单</button>
+      <button class="nav-btn" data-target="game">追逐小游戏</button>
+      <button class="nav-btn" data-target="future">愿望清单</button>
     </nav>
   </header>
 
@@ -23,14 +23,21 @@
     <div class="hero">
       <div class="hero-bg"></div>
       <div class="hero-content">
-        <p class="hero-tagline">这是只属于我们两个人的小网站 💫</p>
+        <p class="hero-tagline">LM × Z.Z.L · private universe</p>
         <h1 class="hero-title">给<span class="highlight">你</span>的一整个宇宙</h1>
         <p class="hero-text">
-          这里会慢慢装满我们的照片、故事、小游戏和计划。<br />
-          每一次打开，都算是一次约会。
+          这里是我悄悄搭起来的小站，<br />
+          放我们的照片、故事、小游戏，还有未来要一起完成的愿望。
         </p>
+
+        <!-- 合照区域：把 img/us_together.jpg 换成你们的合照文件名 -->
+        <div class="hero-photo">
+          <img src="img/us_together.jpg" alt="我们的合照" />
+          <div class="hero-photo-caption">LM &amp; Z.Z.L · our little universe</div>
+        </div>
+
         <button class="primary-btn" data-target="album">
-          进入我们的回忆相册 💌
+          先去看看我们的回忆相册 📷
         </button>
       </div>
     </div>
@@ -39,27 +46,27 @@
   <!-- 回忆相册 -->
   <section id="album" class="page">
     <h2 class="section-title">回忆相册 📷</h2>
-    <p class="section-subtitle">一点点，把关于你的每一帧都收集起来。</p>
+    <p class="section-subtitle">一点点，把关于你的每一帧都收集起来。你也可以来偷偷加几张。</p>
 
     <div class="album-grid" id="albumGrid">
-      <!-- 下面这些只是示例，你可以换成自己图片路径 -->
+      <!-- 这里的几张是“固定相册”，你可以直接改成你真实图片路径 -->
       <div class="memory-card">
         <div class="memory-img-wrap">
-          <img src="img/her_bus.jpg" alt="她在车上的那张自拍" />
+          <img src="img/her_bus.jpg" alt="她在车上的自拍" />
         </div>
         <div class="memory-info">
-          <div class="memory-date">2023 · 某个回家的路上</div>
-          <div class="memory-text">那天你戴着耳机，我只想坐你旁边一辈子。</div>
+          <div class="memory-date">某次回家的路上</div>
+          <div class="memory-text">那天你戴着耳机，我只想永远坐在你旁边。</div>
         </div>
       </div>
 
       <div class="memory-card">
         <div class="memory-img-wrap">
-          <img src="img/you_id.jpg" alt="你的证件照" />
+          <img src="img/you_id.jpg" alt="LM 的证件照" />
         </div>
         <div class="memory-info">
-          <div class="memory-date">我们</div>
-          <div class="memory-text">是两张照片里的两个人，也是同一个故事里的主角。</div>
+          <div class="memory-date">认真一点的我</div>
+          <div class="memory-text">想用最好的自己，走向最好的你。</div>
         </div>
       </div>
 
@@ -68,8 +75,8 @@
           <img src="img/her_garden.jpg" alt="她在亭子里" />
         </div>
         <div class="memory-info">
-          <div class="memory-date">那天在公园</div>
-          <div class="memory-text">阳光很乖，正好落在你肩上。</div>
+          <div class="memory-date">在亭子那里</div>
+          <div class="memory-text">阳光很乖，刚刚好落在你肩上。</div>
         </div>
       </div>
 
@@ -78,23 +85,41 @@
           <img src="img/her_vsign.jpg" alt="她比耶" />
         </div>
         <div class="memory-info">
-          <div class="memory-date">某个晚上的合照</div>
-          <div class="memory-text">你举着剪刀手，而我举着整颗心给你。</div>
+          <div class="memory-date">某个被你点亮的晚上</div>
+          <div class="memory-text">你举着剪刀手，而我把整颗心举给你。</div>
         </div>
       </div>
     </div>
-    <p class="section-tip">📌 你可以随时在 <code>albumGrid</code> 里继续往下加卡片。</p>
+
+    <!-- 动态添加回忆 -->
+    <div class="album-editor">
+      <h3>➕ 添加一条新的回忆</h3>
+      <label>
+        照片（只保存在本设备，不会上传）：
+        <input type="file" id="albumImageInput" accept="image/*" />
+      </label>
+      <label>
+        日期：
+        <input type="date" id="albumDateInput" />
+      </label>
+      <label>
+        一小句说明：
+        <textarea id="albumTextInput" rows="2" placeholder="写下这一刻对你来说是什么呀～"></textarea>
+      </label>
+      <button id="addMemoryBtn" class="primary-btn">保存到相册</button>
+      <p class="section-tip">
+        小提示：这一部分对谁的浏览器就是谁的私人相册，你在你电脑加的，她在自己手机上看不到，反之亦然。
+      </p>
+    </div>
   </section>
 
   <!-- 默契挑战 -->
   <section id="quiz" class="page">
     <h2 class="section-title">情侣默契挑战 💞</h2>
-    <p class="section-subtitle">
-      看看你对我（自恋），或者我对你，到底有多了解。
-    </p>
+    <p class="section-subtitle">看看 LM 到底有多了解 Z.Z.L，或者反过来～</p>
 
     <div class="quiz-box">
-      <div id="quizQuestion" class="quiz-question">点击开始吧～</div>
+      <div id="quizQuestion" class="quiz-question">点下面开始挑战吧！</div>
       <div id="quizOptions" class="quiz-options"></div>
       <div class="quiz-footer">
         <button id="startQuizBtn" class="primary-btn">开始答题</button>
@@ -106,48 +131,62 @@
     <canvas id="heartCanvas" class="heart-canvas"></canvas>
   </section>
 
-  <!-- 抓住我小游戏 -->
+  <!-- 追逐小游戏 -->
   <section id="game" class="page">
-    <h2 class="section-title">抓住我就给你亲亲游戏 😆</h2>
-    <p class="section-subtitle">用鼠标试试看能不能点到下面那个小按钮。</p>
+    <h2 class="section-title">LM 追 Z.Z.L 小游戏 🎮</h2>
+    <p class="section-subtitle">
+      二维平面上，LM 稍微跑得更快一点；如果一路没被障碍绊倒，就能追上 Z.Z.L。
+    </p>
 
-    <div class="game-area" id="gameArea">
-      <button id="runBtn" class="run-btn">来抓我呀 💗</button>
+    <div class="game-config">
+      <label>
+        上传 LM 的大头照：
+        <input type="file" id="meHeadInput" accept="image/*" />
+      </label>
+      <label>
+        上传 Z.Z.L 的大头照：
+        <input type="file" id="herHeadInput" accept="image/*" />
+      </label>
+      <p class="section-tip">
+        头像只会保存在当前浏览器（使用 base64），不会上传到 GitHub 或任何服务器。
+      </p>
     </div>
-    <div id="gameMsg" class="game-msg"></div>
+
+    <div class="game-area-canvas">
+      <canvas id="gameCanvas" class="game-canvas"></canvas>
+    </div>
+
+    <div class="game-controls">
+      <p>操作：按 <kbd>空格</kbd> 键一起跳跃，躲开障碍，让 LM 成功追到 Z.Z.L！</p>
+      <button id="startGameBtn" class="primary-btn">开始游戏</button>
+      <div id="gameStatus" class="game-msg"></div>
+    </div>
   </section>
 
-  <!-- 未来清单 -->
+  <!-- 愿望清单 -->
   <section id="future" class="page">
-    <h2 class="section-title">我们的未来清单 📝</h2>
+    <h2 class="section-title">我们的愿望清单 📝</h2>
     <p class="section-subtitle">先写下来，慢慢一起去实现。</p>
 
-    <ul class="todo-list" id="todoList">
-      <li class="todo-item">
-        <input type="checkbox" disabled />
-        <span>一起去海边看一次日出</span>
-      </li>
-      <li class="todo-item">
-        <input type="checkbox" disabled />
-        <span>看一场只属于我们的烟花</span>
-      </li>
-      <li class="todo-item">
-        <input type="checkbox" disabled />
-        <span>在某个陌生城市迷路，然后一起找到回去的路</span>
-      </li>
-      <li class="todo-item">
-        <input type="checkbox" disabled />
-        <span>在很久很久以后，还能一起打开这个网站回忆今天</span>
-      </li>
-    </ul>
+    <ul class="todo-list" id="todoList"></ul>
+
+    <div class="todo-editor">
+      <input
+        type="text"
+        id="newWishInput"
+        placeholder="写下我们想做的一件事，比如：一起去海边看日出"
+      />
+      <button id="addWishBtn" class="primary-btn">添加愿望</button>
+    </div>
 
     <p class="section-tip">
-      以后可以把这一块做成真正可勾选、可新增的 TODO（在 <code>script.js</code> 里实现 localStorage 持久化）。
+      愿望和完成状态会保存在浏览器本地，下次打开还在。你和她在各自设备上可以写各自的小愿望。
     </p>
   </section>
 
   <footer class="site-footer">
-    Made with ❤️ for her · <span id="daysCounter"></span>
+    <span>LM × Z.Z.L · made with ❤️</span>
+    <span id="daysCounter"></span>
   </footer>
 
   <script src="script.js"></script>
