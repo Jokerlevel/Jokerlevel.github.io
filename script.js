@@ -265,6 +265,12 @@ loadMemories();
 // ======================================================
 // ② 情侣默契挑战：Supabase 题库 + 排行榜
 // ======================================================
+
+// ======================================================
+// 4. 情侣默契挑战：套卷制出题 + 答题 + 排行榜
+//    对应 <section id="quizPage"> 部分
+// ======================================================
+const QUIZ_SETS_TABLE = "quiz_sets";
 const QUIZ_QUESTIONS_TABLE = "quiz_questions";
 const QUIZ_RESULTS_TABLE = "quiz_results";
 
@@ -273,151 +279,320 @@ const quizPlayModeBtn = document.getElementById("quizPlayModeBtn");
 const quizEditPanel = document.getElementById("quizEditPanel");
 const quizPlayPanel = document.getElementById("quizPlayPanel");
 
+// 套卷相关
+const quizSetList = document.getElementById("quizSetList");
+const quizSetTitleInput = document.getElementById("quizSetTitleInput");
+const quizSetAuthorInput = document.getElementById("quizSetAuthorInput");
+const quizCreateSetBtn = document.getElementById("quizCreateSetBtn");
+const quizCurrentSetLabel = document.getElementById("quizCurrentSetLabel");
+
+// 出题相关
 const quizEditInput = document.getElementById("quizEditInput");
 const quizAddQuestionBtn = document.getElementById("quizAddQuestionBtn");
 const quizQuestionList = document.getElementById("quizQuestionList");
-const quizClearAllBtn = document.getElementById("quizClearAllBtn");
 
+// 答题相关
 const quizQuestionEl = document.getElementById("quizQuestion");
 const quizOptionsEl = document.getElementById("quizOptions");
 const quizProgressEl = document.getElementById("quizProgress");
 const quizResultEl = document.getElementById("quizResult");
-const startQuizBtn = document.getElementById("startQuizBtn");
-
 const quizAfterPanel = document.getElementById("quizAfterPanel");
 const quizFinalText = document.getElementById("quizFinalText");
 const quizNameInput = document.getElementById("quizNameInput");
 const quizSaveResultBtn = document.getElementById("quizSaveResultBtn");
 const quizLeaderboardBody = document.getElementById("quizLeaderboard");
 
+let quizSets = [];
+let currentSetId = null;       // 正在出题的这套
+let currentSetTitle = "";
+let currentSetAuthor = "";
+
+let playingSetId = null;       // 当前正在答题的套卷
+let playingSetTitle = "";
+
 let quizQuestions = [];
 let currentQuizIndex = -1;
 let quizScore = 0;
 let quizTotal = 0;
 
-// 切换模式：出题 / 做题
-quizEditModeBtn.addEventListener("click", () => {
-  quizEditPanel.style.display = "block";
-  quizPlayPanel.style.display = "none";
-});
+// -----------------------------
+// 模式切换：出题 / 答题
+// -----------------------------
+if (quizEditModeBtn && quizPlayModeBtn) {
+  quizEditModeBtn.addEventListener("click", () => {
+    if (!quizEditPanel || !quizPlayPanel) return;
+    quizEditPanel.style.display = "block";
+    quizPlayPanel.style.display = "none";
+  });
 
-quizPlayModeBtn.addEventListener("click", () => {
-  quizEditPanel.style.display = "none";
-  quizPlayPanel.style.display = "block";
-  loadQuizQuestions();
-  loadQuizLeaderboard();
-});
+  quizPlayModeBtn.addEventListener("click", async () => {
+    if (!quizEditPanel || !quizPlayPanel) return;
+    quizEditPanel.style.display = "none";
+    quizPlayPanel.style.display = "block";
+    await loadQuizSets();
+    // 不自动开始任何套卷，需要用户点上面的某一套
+    clearQuizPlayArea();
+  });
+}
 
-// 从 Supabase 加载题目
-async function loadQuizQuestions() {
+// -----------------------------
+// 载入 & 渲染套卷列表
+// -----------------------------
+async function loadQuizSets() {
+  if (!quizSetList) return;
   const { data, error } = await supabase
-    .from(QUIZ_QUESTIONS_TABLE)
+    .from(QUIZ_SETS_TABLE)
     .select("*")
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("加载题目失败：", error);
+    console.error("加载套卷失败：", error);
     return;
   }
-  quizQuestions = data || [];
-  renderQuizQuestionList();
+  quizSets = data || [];
+  renderQuizSetList();
 }
 
-// 渲染出题面板中的题目列表
-function renderQuizQuestionList() {
-  quizQuestionList.innerHTML = "";
-  quizQuestions.forEach((q, idx) => {
-    const li = document.createElement("li");
-    const opts = q.options.join(" / ");
-    li.textContent = `${idx + 1}. ${q.question}  [${opts}]  正确：${q.options[q.answer_index]}`;
-    quizQuestionList.appendChild(li);
+function renderQuizSetList() {
+  if (!quizSetList) return;
+  quizSetList.innerHTML = "";
+  if (!quizSets.length) {
+    const empty = document.createElement("div");
+    empty.className = "quiz-set-empty";
+    empty.textContent = "现在还没有套卷，可以先去上面“出一套新的题”。";
+    quizSetList.appendChild(empty);
+    return;
+  }
+
+  quizSets.forEach((s) => {
+    const card = document.createElement("div");
+    card.className = "quiz-set-card";
+
+    const mainBtn = document.createElement("button");
+    mainBtn.className = "quiz-set-play-btn";
+    mainBtn.dataset.setId = s.id;
+    mainBtn.innerHTML = `
+      <div class="quiz-set-title">${s.title}</div>
+      <div class="quiz-set-meta">by ${s.author || "某个神秘出题人"}</div>
+    `;
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "quiz-set-delete-btn";
+    delBtn.dataset.setId = s.id;
+    delBtn.textContent = "删除";
+
+    card.appendChild(mainBtn);
+    card.appendChild(delBtn);
+    quizSetList.appendChild(card);
   });
 }
 
-// 把编辑区的文本解析成一题并插入数据库
-quizAddQuestionBtn.addEventListener("click", async () => {
-  const raw = quizEditInput.value.trim();
-  if (!raw) {
-    alert("先写点内容吧～");
-    return;
-  }
-  const lines = raw.split("\n").map((s) => s.trim()).filter(Boolean);
-  if (lines.length < 2) {
-    alert("至少需要 1 行题目 + 1 行选项");
-    return;
-  }
-  const question = lines[0];
-  const options = [];
-  let answerIndex = -1;
-  lines.slice(1).forEach((line) => {
-    if (line.startsWith("*")) {
-      options.push(line.slice(1));
-      answerIndex = options.length - 1;
-    } else {
-      options.push(line);
+// 套卷列表的点击事件：开始答题 / 删除套卷
+if (quizSetList) {
+  quizSetList.addEventListener("click", async (e) => {
+    const playBtn = e.target.closest(".quiz-set-play-btn");
+    const delBtn = e.target.closest(".quiz-set-delete-btn");
+
+    if (playBtn) {
+      const setId = playBtn.dataset.setId;
+      const set = quizSets.find((s) => s.id === setId);
+      if (!set) return;
+      playingSetId = setId;
+      playingSetTitle = set.title;
+      await startQuizForSet(setId);
+      return;
+    }
+
+    if (delBtn) {
+      const setId = delBtn.dataset.setId;
+      const set = quizSets.find((s) => s.id === setId);
+      if (!set) return;
+      if (!confirm(`确认要删除套卷「${set.title}」吗？里面的题目和成绩也会一起删掉哦～`)) return;
+
+      const { error } = await supabase
+        .from(QUIZ_SETS_TABLE)
+        .delete()
+        .eq("id", setId);
+
+      if (error) {
+        console.error(error);
+        alert("删除套卷失败：" + error.message);
+        return;
+      }
+      if (currentSetId === setId) {
+        currentSetId = null;
+        currentSetTitle = "";
+        currentSetAuthor = "";
+        if (quizCurrentSetLabel) quizCurrentSetLabel.textContent = "";
+        if (quizQuestionList) quizQuestionList.innerHTML = "";
+      }
+      if (playingSetId === setId) {
+        playingSetId = null;
+        playingSetTitle = "";
+        clearQuizPlayArea();
+      }
+      await loadQuizSets();
     }
   });
-  if (options.length === 0 || answerIndex === -1) {
-    alert("选项里至少有一个要用 * 标出正确答案哦～");
-    return;
-  }
+}
 
+// -----------------------------
+// 创建 / 切换当前出题的套卷
+// -----------------------------
+if (quizCreateSetBtn) {
+  quizCreateSetBtn.addEventListener("click", async () => {
+    const title = (quizSetTitleInput?.value || "").trim();
+    const author = (quizSetAuthorInput?.value || "").trim();
+    if (!title) {
+      alert("先给这套卷起个名字吧～");
+      return;
+    }
+    // 创建一套新的
+    const { data, error } = await supabase
+      .from(QUIZ_SETS_TABLE)
+      .insert({ title, author })
+      .select()
+      .single();
+
+    if (error) {
+      console.error(error);
+      alert("创建套卷失败：" + error.message);
+      return;
+    }
+
+    currentSetId = data.id;
+    currentSetTitle = data.title;
+    currentSetAuthor = data.author || "";
+    if (quizCurrentSetLabel) {
+      quizCurrentSetLabel.textContent = `正在出题的套卷：${currentSetTitle} ${
+        currentSetAuthor ? `（出题人：${currentSetAuthor}）` : ""
+      }`;
+    }
+    if (quizEditInput) quizEditInput.value = "";
+    if (quizQuestionList) quizQuestionList.innerHTML = "";
+
+    await loadQuizSets();
+    alert("新套卷创建好了，下面开始一题一题加吧～");
+  });
+}
+
+// -----------------------------
+// 给当前套卷添加题目
+// -----------------------------
+if (quizAddQuestionBtn) {
+  quizAddQuestionBtn.addEventListener("click", async () => {
+    if (!currentSetId) {
+      alert("先在上面创建一套卷，再开始出题哦～");
+      return;
+    }
+    const raw = (quizEditInput?.value || "").trim();
+    if (!raw) {
+      alert("先在文本框里写一题吧～");
+      return;
+    }
+    const lines = raw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (lines.length < 2) {
+      alert("至少需要 1 行题目 + 1 行选项");
+      return;
+    }
+
+    const question = lines[0];
+    const options = [];
+    let answerIndex = -1;
+    lines.slice(1).forEach((line) => {
+      if (line.startsWith("*")) {
+        options.push(line.slice(1));
+        answerIndex = options.length - 1;
+      } else {
+        options.push(line);
+      }
+    });
+    if (options.length === 0 || answerIndex === -1) {
+      alert("选项里至少有一个要用 * 标出正确答案哦～");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from(QUIZ_QUESTIONS_TABLE)
+      .insert({
+        set_id: currentSetId,
+        question,
+        options,
+        answer_index: answerIndex,
+      })
+      .select();
+
+    if (error) {
+      console.error(error);
+      alert("添加题目失败：" + error.message);
+      return;
+    }
+
+    if (quizEditInput) quizEditInput.value = "";
+    // 在当前套卷题目列表里追加展示
+    const q = data[0];
+    if (quizQuestionList) {
+      const li = document.createElement("li");
+      const opts = q.options.join(" / ");
+      li.textContent = `${q.question}  [${opts}]  正确：${
+        q.options[q.answer_index]
+      }`;
+      quizQuestionList.appendChild(li);
+    }
+
+    alert("这一题已经收进套卷啦～");
+  });
+}
+
+// -----------------------------
+// 答题：加载某套卷并开始作答
+// -----------------------------
+async function startQuizForSet(setId) {
   const { data, error } = await supabase
     .from(QUIZ_QUESTIONS_TABLE)
-    .insert({
-      question,
-      options,
-      answer_index: answerIndex,
-    })
-    .select();
+    .select("*")
+    .eq("set_id", setId)
+    .order("created_at", { ascending: true });
 
   if (error) {
     console.error(error);
-    alert("添加题目失败：" + error.message);
+    alert("读取题目失败：" + error.message);
+    return;
+  }
+  if (!data || !data.length) {
+    alert("这套卷还没有题目呢，可以先去出题模式里加几题～");
     return;
   }
 
-  quizEditInput.value = "";
-  quizQuestions.push(data[0]);
-  renderQuizQuestionList();
-});
-
-// 清空全部题目
-quizClearAllBtn.addEventListener("click", async () => {
-  if (!confirm("确定要清空所有题目吗？")) return;
-  const { error } = await supabase.from(QUIZ_QUESTIONS_TABLE).delete().neq("id", "00000000-0000-0000-0000-000000000000");
-  if (error) {
-    console.error(error);
-    alert("清空失败：" + error.message);
-    return;
-  }
-  quizQuestions = [];
-  renderQuizQuestionList();
-});
-
-// 开始答题
-startQuizBtn.addEventListener("click", async () => {
-  await loadQuizQuestions();
-  if (!quizQuestions.length) {
-    alert("现在还没有题目呢，先去“我来出题”那里出几题吧～");
-    return;
-  }
+  quizQuestions = data;
+  quizTotal = quizQuestions.length;
   quizScore = 0;
   currentQuizIndex = 0;
-  quizTotal = quizQuestions.length;
-  startQuizBtn.disabled = true;
-  startQuizBtn.textContent = "作答中...";
-  quizAfterPanel.style.display = "none";
+  if (quizAfterPanel) quizAfterPanel.style.display = "none";
+  clearQuizPlayArea();
   renderCurrentQuizQuestion();
-});
+  await loadQuizLeaderboardForSet(setId);
+}
 
+function clearQuizPlayArea() {
+  if (quizQuestionEl) quizQuestionEl.textContent = "";
+  if (quizOptionsEl) quizOptionsEl.innerHTML = "";
+  if (quizProgressEl) quizProgressEl.textContent = "";
+  if (quizResultEl) quizResultEl.textContent = "";
+  if (quizAfterPanel) quizAfterPanel.style.display = "none";
+}
+
+// 渲染当前题目
 function renderCurrentQuizQuestion() {
   const q = quizQuestions[currentQuizIndex];
-  if (!q) return;
+  if (!q || !quizQuestionEl || !quizOptionsEl || !quizProgressEl) return;
 
   quizQuestionEl.textContent = q.question;
   quizOptionsEl.innerHTML = "";
-  quizResultEl.textContent = "";
+  if (quizResultEl) quizResultEl.textContent = "";
   quizProgressEl.textContent = `第 ${currentQuizIndex + 1} / ${quizTotal} 题`;
 
   q.options.forEach((opt, idx) => {
@@ -431,20 +606,22 @@ function renderCurrentQuizQuestion() {
 
 function handleQuizAnswer(index) {
   const q = quizQuestions[currentQuizIndex];
+  if (!q || !quizOptionsEl) return;
   const optionButtons = quizOptionsEl.querySelectorAll(".quiz-option-btn");
 
   optionButtons.forEach((btn, idx) => {
     btn.disabled = true;
     if (idx === q.answer_index) btn.classList.add("correct");
-    if (idx === index && idx !== q.answer_index) btn.classList.add("wrong");
+    if (idx === index && idx !== q.answer_index)
+      btn.classList.add("wrong");
   });
 
   if (index === q.answer_index) {
     quizScore++;
-    quizResultEl.textContent = "这题答对啦 💕";
+    if (quizResultEl) quizResultEl.textContent = "这题答对啦 💕";
     triggerHearts();
   } else {
-    quizResultEl.textContent = "下题一定对～";
+    if (quizResultEl) quizResultEl.textContent = "下题一定对～";
   }
 
   setTimeout(() => {
@@ -454,48 +631,62 @@ function handleQuizAnswer(index) {
     } else {
       finishQuiz();
     }
-  }, 1000);
+  }, 800);
 }
 
 function finishQuiz() {
+  if (!quizQuestionEl || !quizOptionsEl || !quizProgressEl || !quizResultEl)
+    return;
   quizQuestionEl.textContent = "挑战结束！";
   quizOptionsEl.innerHTML = "";
   quizProgressEl.textContent = "";
+
   const percent = Math.round((quizScore / quizTotal) * 100);
   quizResultEl.textContent = `本次得分：${quizScore} / ${quizTotal}，默契度 ${percent}%`;
-  startQuizBtn.disabled = false;
-  startQuizBtn.textContent = "再做一遍";
-  quizAfterPanel.style.display = "block";
-  quizFinalText.textContent = `写下你的名字，把这次的成绩存进排行榜吧～`;
+  if (quizAfterPanel) quizAfterPanel.style.display = "block";
+  if (quizFinalText) {
+    quizFinalText.textContent = playingSetTitle
+      ? `这是套卷「${playingSetTitle}」的成绩，写下你的名字存进排行榜吧～`
+      : `写下你的名字，把这次的成绩存进排行榜吧～`;
+  }
 }
 
-// 保存成绩到排行榜
-quizSaveResultBtn.addEventListener("click", async () => {
-  const name = quizNameInput.value.trim();
-  if (!name) {
-    alert("写个名字吧～");
-    return;
-  }
-  const { error } = await supabase.from(QUIZ_RESULTS_TABLE).insert({
-    name,
-    score: quizScore,
-    total: quizTotal,
+// 保存成绩
+if (quizSaveResultBtn) {
+  quizSaveResultBtn.addEventListener("click", async () => {
+    if (!playingSetId) {
+      alert("先选一套卷并完成作答噢～");
+      return;
+    }
+    const name = (quizNameInput?.value || "").trim();
+    if (!name) {
+      alert("写个名字吧～");
+      return;
+    }
+    const { error } = await supabase.from(QUIZ_RESULTS_TABLE).insert({
+      set_id: playingSetId,
+      name,
+      score: quizScore,
+      total: quizTotal,
+    });
+    if (error) {
+      console.error(error);
+      alert("保存成绩失败：" + error.message);
+      return;
+    }
+    if (quizAfterPanel) quizAfterPanel.style.display = "none";
+    if (quizNameInput) quizNameInput.value = "";
+    await loadQuizLeaderboardForSet(playingSetId);
   });
-  if (error) {
-    console.error(error);
-    alert("保存成绩失败：" + error.message);
-    return;
-  }
-  quizAfterPanel.style.display = "none";
-  quizNameInput.value = "";
-  await loadQuizLeaderboard();
-});
+}
 
-// 加载排行榜
-async function loadQuizLeaderboard() {
+// 当前套卷的排行榜
+async function loadQuizLeaderboardForSet(setId) {
+  if (!quizLeaderboardBody) return;
   const { data, error } = await supabase
     .from(QUIZ_RESULTS_TABLE)
     .select("*")
+    .eq("set_id", setId)
     .order("score", { ascending: false })
     .order("created_at", { ascending: true })
     .limit(20);
@@ -517,6 +708,9 @@ async function loadQuizLeaderboard() {
     quizLeaderboardBody.appendChild(tr);
   });
 }
+
+// 页面加载时，先加载一次套卷列表
+loadQuizSets();
 
 // 默认打开“开始答题”模式
 quizPlayModeBtn.click();
