@@ -927,8 +927,8 @@ function resetGame() {
 resetGame();
 
 function spawnObstacle() {
-  const width = 24 + Math.random() * 8;     // 24~32 像素
-  const height = 22 + Math.random() * 10;   // 22~32 像素
+  const width = 10 + Math.random() * 8;     // 24~32 像素
+  const height = 16 + Math.random() * 10;   // 22~32 像素
   obstacles.push({
     x: gameCanvas.width + 40 + Math.random() * 80,
     y: groundY - height,
@@ -994,7 +994,7 @@ function updateGame(dt) {
     }
   });
 
-  const chaseSpeed = 10;
+  const chaseSpeed = 20;
   gap -= chaseSpeed * dt;
   if (gap <= 40) {
     gameStatus.textContent = "LM 终于追到 Z.Z.L 啦，奖励一个大大大拥抱！🤍";
