@@ -225,7 +225,7 @@ runBtn.addEventListener("click", () => {
 // ========== 天数计数（从在一起那天算起） ==========
 
 // 把这里替换成你们在一起的日期
-const startDate = new Date("2023-10-01");
+const startDate = new Date("2025-04-19");
 
 function updateDaysCounter() {
   const now = new Date();
