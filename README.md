@@ -1,92 +1,60 @@
-# 趣味答题网站 | Interactive Quiz Website
+# 💌 给她的小宇宙 | Our Little Universe
 
-一个功能完整的中文答题网站，支持选择题、判断题，答对后有炫酷的粒子特效和奖励图片！
+这是一个我为女朋友做的专属恋爱主题网站。  
+它不是很复杂，但里面的每一个模块，都是写给她的小心事。
 
-A fully functional Chinese quiz website with multiple choice and true/false questions, featuring particle effects and reward images!
+A romantic, single-page website I built for my girlfriend.  
+Simple tech, lots of feelings.
 
-## ✨ 主要功能 | Features
-
-- 🎮 **答题模式** - 回答选择题和判断题
-- ⚙️ **管理模式** - 添加和管理题目及奖励图片
-- 🎆 **粒子特效** - 答对时显示炫酷的粒子动画
-- 🎁 **奖励系统** - 完成答题后查看奖励图片
-- 💾 **数据持久化** - 使用 localStorage 保存数据
-- 📱 **响应式设计** - 完美支持手机和电脑
-- 🔒 **安全验证** - 防止 XSS 攻击
-
-## 🚀 快速开始 | Quick Start
-
-1. 访问网站 | Visit: https://jokerlevel.github.io
-2. 选择答题模式开始答题 | Choose Quiz Mode to start
-3. 或选择管理模式添加自己的题目 | Or choose Admin Mode to add your questions
-
-## 📖 使用说明 | Usage
-
-### 答题模式 | Quiz Mode
-1. 点击"答题模式"按钮
-2. 点击"开始答题"
-3. 选择你认为正确的答案
-4. 答对会触发粒子特效！
-5. 完成后查看你的分数和奖励图片
-
-### 管理模式 | Admin Mode
-1. 点击"管理模式"按钮
-2. 添加题目：
-   - 选择题目类型（选择题/判断题）
-   - 输入题目内容
-   - 对于选择题，每行输入一个选项，在正确答案前加 `*`
-   - 对于判断题，选择正确或错误
-3. 管理奖励图片：
-   - 输入图片 URL（支持 .jpg, .png, .gif 等）
-   - 支持的域名：unsplash.com, pexels.com, pixabay.com
-
-## 🛠️ 技术栈 | Tech Stack
-
-- **HTML5** - 页面结构
-- **CSS3** - 样式和动画
-- **JavaScript (ES6+)** - 交互逻辑
-- **Canvas API** - 粒子特效
-- **LocalStorage** - 数据持久化
-
-## 🔒 安全特性 | Security
-
-- URL 验证防止 XSS 攻击
-- 仅允许 HTTP/HTTPS 协议
-- 图片扩展名验证
-- 可信域名白名单
-- 输入清理和验证
-
-## 📁 文件结构 | File Structure
-
-```
-.
-├── index.html    # 主页面
-├── styles.css    # 样式文件
-├── script.js     # 脚本文件
-└── README.md     # 说明文档
-```
-
-## 🎨 自定义 | Customization
-
-你可以通过管理模式自定义：
-- 添加自己的题目
-- 设置奖励图片
-- 所有数据保存在浏览器本地
-
-You can customize through Admin Mode:
-- Add your own questions
-- Set reward images
-- All data saved in browser
-
-## 📝 许可 | License
-
-MIT License - 自由使用和修改 | Free to use and modify
-
-## 🤝 贡献 | Contributing
-
-欢迎提交 Issue 和 Pull Request！
-Welcome to submit Issues and Pull Requests!
+在线访问（如果你是我 😏）：  
+👉 https://jokerlevel.github.io
 
 ---
 
-Made with ❤️ by Jokerlevel
+## ✨ 功能概览 | Features
+
+网站是一个单页应用，通过顶部导航切换不同板块：
+
+### 1. 首页 · 情书 (`#home`)
+- 朦胧背景 + 大标题：**“给你的一整个宇宙”**
+- 一段简短的告白文字
+- 按钮可以一键跳转到回忆相册
+
+### 2. 回忆相册 · Memory Album (`#album`)
+- 网格卡片布局的相册区
+- 每张照片包含：
+  - 图片
+  - 时间 / 场景描述
+  - 一小句注释（属于我们的小剧场）
+- 所有图片本地存储在 `img/` 文件夹中，可随时增删
+
+### 3. 情侣默契挑战 · Couple Quiz (`#quiz`)
+- 自定义题库，问题全部是**关于我们**的
+- 支持单选题，点击选项立即判定对错
+- 答对会触发 **爱心粒子特效**（Canvas 实现）
+- 最后根据答对题目数量计算“默契度”
+
+### 4. 抓住我小游戏 · Catch Me Game (`#game`)
+- 一个写着“来抓我呀 💗”的小按钮
+- 鼠标靠近时会自动乱跑，增加互动感
+- 真点到按钮时会显示奖励文案（比如“给你亲亲 😘”）
+
+### 5. 未来清单 · Future TODO List (`#future`)
+- 展示几条我们想一起完成的愿望/计划
+- 目前展示为静态勾选项（后续可以拓展成可勾选 + 本地存储）
+
+### 6. 在一起的天数 · Days Counter
+- 页脚显示：**“已经陪你走过 XX 天啦”**
+- 日期来源于 `script.js` 中自定义的起始日期
+
+---
+
+## 📁 项目结构 | File Structure
+
+```text
+.
+├── index.html      # 主页面结构（Home / Album / Quiz / Game / Future）
+├── styles.css      # 样式文件：恋爱配色、布局、响应式
+├── script.js       # 前端交互逻辑和小游戏
+├── img/            # 图片素材（我们的合照、她的照片等）
+└── README.md       # 项目说明（就是你现在看到的这个）
