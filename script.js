@@ -3,6 +3,80 @@
 // ======================================================
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+// ======================================================
+// 0. 网站密码锁
+// ======================================================
+const SITE_PASSWORD = "131413141314zzl";
+
+function setupPasswordGate() {
+  const authed = localStorage.getItem("love_site_authed");
+  if (authed === "ok") return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "passwordOverlay";
+  Object.assign(overlay.style, {
+    position: "fixed",
+    inset: "0",
+    background: "rgba(0,0,0,0.8)",
+    zIndex: "9999",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
+  overlay.innerHTML = `
+    <div class="pw-modal" style="
+      background:#fff;
+      padding:24px 28px;
+      border-radius:18px;
+      max-width:320px;
+      width:90%;
+      text-align:center;
+      box-shadow:0 10px 30px rgba(0,0,0,0.2);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text';
+    ">
+      <h2 style="margin-bottom:12px;">Hi Z.Z.L 💗</h2>
+      <p style="font-size:14px; color:#555; margin-bottom:16px;">
+        这是 LM 悄悄给你做的小网站，先输入我们的暗号再进去吧～
+      </p>
+      <input id="pwInput" type="password" placeholder="输入密码"
+        style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;">
+      <button id="pwButton" style="
+        width:100%; padding:8px 0; border:none; border-radius:999px;
+        background:#ff7b9c; color:#fff; font-weight:600; cursor:pointer;
+      ">进入我们的世界</button>
+      <div id="pwError" style="margin-top:8px; font-size:12px; color:#e44;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const pwInput = overlay.querySelector("#pwInput");
+  const pwButton = overlay.querySelector("#pwButton");
+  const pwError = overlay.querySelector("#pwError");
+
+  function tryLogin() {
+    if (pwInput.value === SITE_PASSWORD) {
+      localStorage.setItem("love_site_authed", "ok");
+      overlay.remove();
+    } else {
+      pwError.textContent = "好像不太对，再想想我们的暗号～";
+      pwInput.value = "";
+      pwInput.focus();
+    }
+  }
+
+  pwButton.addEventListener("click", tryLogin);
+  pwInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") tryLogin();
+  });
+
+  pwInput.focus();
+}
+
+setupPasswordGate();
+
+
 // ★★★ 把下面两行改成你自己的项目配置 ★★★
 const supabaseUrl = "https://hhabcapddorjuhwxouwt.supabase.co"; // Project URL
 const supabaseAnonKey = "sb_publishable_Yw0qjmTciWxdWMF3Z3zb1Q__E54t4eK"; // anon public key
