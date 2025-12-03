@@ -927,16 +927,17 @@ function resetGame() {
 resetGame();
 
 function spawnObstacle() {
-  const width = 26 + Math.random() * 18;
-  const height = 30 + Math.random() * 20;
+  const width = 24 + Math.random() * 8;     // 24~32 像素
+  const height = 22 + Math.random() * 10;   // 22~32 像素
   obstacles.push({
-    x: gameCanvas.width + Math.random() * 80,
+    x: gameCanvas.width + 40 + Math.random() * 80,
     y: groundY - height,
     width,
     height,
     hitLM: false,
   });
 }
+
 
 let obstacleTimer = 0;
 const obstacleInterval = 1400;
@@ -1002,12 +1003,44 @@ function updateGame(dt) {
 }
 
 function drawCharacter(ch, color, headImg, label) {
-  gctx.fillStyle = color;
-  gctx.fillRect(ch.x, ch.y, ch.width, ch.height);
+  const cx = ch.x + ch.width / 2;      // 身体中心 x
+  const footY = ch.y + ch.height;      // 脚底 y
+  const torsoTop = footY - 40;         // 身体上端
+  const torsoMid = (torsoTop + footY) / 2;
 
+  // 画身体（细线）
+  gctx.save();
+  gctx.strokeStyle = color;
+  gctx.lineWidth = 3;
+
+  // 躯干
+  gctx.beginPath();
+  gctx.moveTo(cx, torsoTop);
+  gctx.lineTo(cx, footY - 8);
+  gctx.stroke();
+
+  // 手臂（略微张开）
+  gctx.beginPath();
+  gctx.moveTo(cx, torsoMid);
+  gctx.lineTo(cx - 12, torsoMid + 6);
+  gctx.moveTo(cx, torsoMid);
+  gctx.lineTo(cx + 12, torsoMid + 6);
+  gctx.stroke();
+
+  // 双腿
+  gctx.beginPath();
+  gctx.moveTo(cx, footY - 8);
+  gctx.lineTo(cx - 10, footY);
+  gctx.moveTo(cx, footY - 8);
+  gctx.lineTo(cx + 10, footY);
+  gctx.stroke();
+
+  gctx.restore();
+
+  // 头像（用图片裁成圆，不存在时用默认 LM / ZL）
   const headRadius = 18;
-  const headX = ch.x + ch.width / 2;
-  const headY = ch.y - headRadius + 4;
+  const headX = cx;
+  const headY = torsoTop - headRadius + 4;
 
   if (headImg && headImg.complete) {
     gctx.save();
@@ -1028,34 +1061,52 @@ function drawCharacter(ch, color, headImg, label) {
   }
 }
 
+
 function drawGame() {
   gctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+  // 地面
   gctx.fillStyle = "#ffe6f0";
   gctx.fillRect(0, groundY, gameCanvas.width, gameCanvas.height - groundY);
 
+  // 障碍
   gctx.fillStyle = "#ffb3c6";
   obstacles.forEach((ob) => {
     gctx.fillRect(ob.x, ob.y, ob.width, ob.height);
   });
 
+  // 根据 gap 动态调整两个人在画布上的距离
+  const maxGap = 160;                              // 逻辑上的最大“距离”
+  const gapClamped = Math.max(0, Math.min(maxGap, gap));
+  const distRatio = gapClamped / maxGap;           // gap 越大，distRatio 越接近 1
+  const baseGapPx = 80;                            // 最小像素间距
+  const extraGapPx = 220;                          // 还能在画布上拉开的最大距离
+
+  // LM 固定在画布左 1/5 处
+  lm.x = gameCanvas.width * 0.2;
+  // Z.Z.L 的 x 随 gap 变化
+  zl.x = lm.x + baseGapPx + extraGapPx * distRatio;
+
+  // 画两个人
   drawCharacter(lm, "#ff7b9c", meHeadImg, "LM");
   drawCharacter(zl, "#ff9bb3", herHeadImg, "ZL");
 
+  // 顶部进度条：gap 越小，追上进度越高
   const barWidth = 200;
   const barHeight = 10;
   const barX = gameCanvas.width - barWidth - 16;
   const barY = 16;
-  const maxGap = 160;
-  const ratio = Math.max(0, Math.min(1, 1 - gap / maxGap));
+  const catchRatio = 1 - gapClamped / maxGap;      // 0~1
 
-  gctx.fillStyle = "rgba(0,0,0,0.1)";
+  gctx.fillStyle = "rgba(0,0,0,0.08)";
   gctx.fillRect(barX, barY, barWidth, barHeight);
   gctx.fillStyle = "#ff7b9c";
-  gctx.fillRect(barX, barY, barWidth * ratio, barHeight);
+  gctx.fillRect(barX, barY, barWidth * catchRatio, barHeight);
   gctx.font = "11px system-ui";
   gctx.fillStyle = "#555";
   gctx.fillText("追上进度", barX, barY - 4);
 }
+
 
 function gameLoop(timestamp) {
   if (!gameRunning) return;
