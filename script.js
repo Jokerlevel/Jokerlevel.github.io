@@ -78,13 +78,17 @@ function isValidImageUrl(url) {
         }
         // 检查是否是常见图片扩展名或来自可信域名
         const pathname = parsedUrl.pathname.toLowerCase();
+        const hostname = parsedUrl.hostname.toLowerCase();
         const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-        const trustedDomains = ['unsplash.com', 'images.unsplash.com', 'pexels.com', 'pixabay.com'];
+        // 明确列出所有允许的域名（包括子域名）
+        const trustedDomains = [
+            'unsplash.com', 'images.unsplash.com', 
+            'pexels.com', 'images.pexels.com',
+            'pixabay.com', 'cdn.pixabay.com'
+        ];
         
         const hasValidExtension = validExtensions.some(ext => pathname.endsWith(ext));
-        const isTrustedDomain = trustedDomains.some(domain => 
-            parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain)
-        );
+        const isTrustedDomain = trustedDomains.some(domain => hostname === domain);
         
         return hasValidExtension || isTrustedDomain;
     } catch (e) {
@@ -234,8 +238,8 @@ function checkAnswer(answer) {
         score++;
         document.getElementById('score').textContent = score;
         
-        // 触发粒子效果（中心位置）
-        createParticles(window.innerWidth / 2, window.innerHeight / 2, 100);
+        // 触发粒子效果（中心位置，优化性能）
+        createParticles(window.innerWidth / 2, window.innerHeight / 2, 50);
         
         // 标记正确答案
         if (question.type === 'multiple') {
