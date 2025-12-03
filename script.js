@@ -960,6 +960,15 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// 手机点击跳跃（iOS Safari 也支持）
+gameCanvas.addEventListener("touchstart", () => {
+  jump();
+});
+
+gameCanvas.addEventListener("mousedown", () => {
+  jump();
+});
+
 function updateGame(dt) {
   const g = 900;
   [lm, zl].forEach((ch) => {
