@@ -852,6 +852,9 @@ loadWishes();
 // ======================================================
 // ④ 追逐小游戏：沿用之前的逻辑（本地）
 // ======================================================
+// ======================================================
+// ④ 追逐小游戏
+// ======================================================
 const gameCanvas = document.getElementById("gameCanvas");
 const gctx = gameCanvas.getContext("2d");
 const startGameBtn = document.getElementById("startGameBtn");
@@ -864,15 +867,12 @@ let groundY;
 let worldSpeed = 140;
 let gap;
 
-const ME_HEAD_KEY = "love_me_head";
-const HER_HEAD_KEY = "love_her_head";
-
+// 直接用本地图片当头像
 let meHeadImg = new Image();
-meHeadImg.src = "img/lm.png";   // ★ 你的大头照
+meHeadImg.src = "img/lm.png";   // LM 的头像
 
 let herHeadImg = new Image();
-herHeadImg.src = "img/zzl.png"; // ★ 她的大头照
-
+herHeadImg.src = "img/zzl.png"; // Z.Z.L 的头像
 
 function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.save();
@@ -946,38 +946,6 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-function setupHeadUpload(inputEl, storageKey, setImgCallback) {
-  inputEl.addEventListener("change", () => {
-    const file = inputEl.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const src = e.target.result;
-      const img = new Image();
-      img.onload = () => {
-        setImgCallback(img);
-        try {
-          localStorage.setItem(storageKey, src);
-        } catch {}
-      };
-      img.src = src;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  try {
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      const img = new Image();
-      img.onload = () => setImgCallback(img);
-      img.src = saved;
-    }
-  } catch {}
-}
-
-setupHeadUpload(meHeadInput, ME_HEAD_KEY, (img) => (meHeadImg = img));
-setupHeadUpload(herHeadInput, HER_HEAD_KEY, (img) => (herHeadImg = img));
-
 function updateGame(dt) {
   const g = 900;
   [lm, zl].forEach((ch) => {
@@ -1028,7 +996,7 @@ function drawCharacter(ch, color, headImg, label) {
   const headX = ch.x + ch.width / 2;
   const headY = ch.y - headRadius + 4;
 
-  if (headImg) {
+  if (headImg && headImg.complete) {
     gctx.save();
     gctx.beginPath();
     gctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
@@ -1096,6 +1064,7 @@ startGameBtn.addEventListener("click", () => {
 });
 
 drawGame();
+
 
 // ======================================================
 // ⑤ 在一起的天数
