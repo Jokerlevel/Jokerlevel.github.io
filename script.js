@@ -996,7 +996,7 @@ function updateGame(dt) {
 
   const chaseSpeed = 20;
   gap -= chaseSpeed * dt;
-  if (gap <= 40) {
+  if (gap <= 10) {
     gameStatus.textContent = "LM 终于追到 Z.Z.L 啦，奖励一个大大大拥抱！🤍";
     gameRunning = false;
   }
