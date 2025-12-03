@@ -102,38 +102,68 @@
   </section>
 
   <!-- 默契挑战 -->
-  <section class="page" id="quiz">
+<section class="page" id="quizPage">
   <h2>情侣默契挑战 💌</h2>
-  <canvas id="heartCanvas" class="heart-canvas"></canvas>
+
   <div class="quiz-modes">
-    <button class="quiz-mode-btn" id="quizEditModeBtn">我来出题</button>
-    <button class="quiz-mode-btn" id="quizPlayModeBtn">开始答题</button>
+    <button class="quiz-mode-btn" id="quizEditModeBtn">出一套新的题</button>
+    <button class="quiz-mode-btn" id="quizPlayModeBtn">去答题模式</button>
+  </div>
+
+  <!-- 套卷列表（出题 & 答题共用） -->
+  <div class="quiz-sets-block">
+    <h3>我们的默契试卷</h3>
+    <p class="quiz-tip">下面每一个都是一套题，点一下就可以作答啦，也可以删除重来。</p>
+    <div class="quiz-set-list" id="quizSetList">
+      <!-- JS 会在这里插入每一套卷的按钮 -->
+    </div>
   </div>
 
   <!-- 出题区域 -->
   <div id="quizEditPanel" class="quiz-panel">
-    <p>每次添加一题：第一行写题目，后面每行一个选项，在正确选项前面加 <code>*</code>。</p>
-    <textarea id="quizEditInput" rows="6" placeholder="例如：
-我们第一次看电影是哪一天？
-*2024.05.20
-2024.05.21
-2024.05.01
-我忘了（不许选）"></textarea>
+    <h3>创建 / 继续编辑一套题</h3>
+
+    <label class="quiz-label">
+      套卷名称：
+      <input id="quizSetTitleInput" placeholder="比如：关于第一次见面的那一天" />
+    </label>
+    <label class="quiz-label">
+      出题人名字：
+      <input id="quizSetAuthorInput" placeholder="比如：LM / Z.Z.L" />
+    </label>
+    <button id="quizCreateSetBtn" class="primary-btn">开始这套题</button>
+
+    <p id="quizCurrentSetLabel" class="quiz-current-set-tip"></p>
+
+    <p class="quiz-tip">
+      每次添加一题：第一行写题目，后面每行一个选项，在正确选项前加 <code>*</code>。<br>
+      例如：<br>
+      我们第一次看电影是哪一天？<br>
+      *2024.05.20<br>
+      2024.05.21<br>
+      2024.05.01<br>
+      我忘了（不许选）
+    </p>
+
+    <textarea id="quizEditInput" rows="6"></textarea>
     <button id="quizAddQuestionBtn">添加这道题</button>
 
-    <h3>当前题目（整套卷子）</h3>
+    <h3>当前套卷中的题目</h3>
     <ul id="quizQuestionList"></ul>
-    <button id="quizClearAllBtn">清空全部题目（慎重）</button>
   </div>
 
   <!-- 答题区域 -->
   <div id="quizPlayPanel" class="quiz-panel" style="display:none;">
+    <p class="quiz-tip">
+      先在上面选一套卷，就会在下面出现题目。<br>
+      一次作答会自动算分，还可以把成绩存进排行榜。
+    </p>
+
     <div id="quizContent">
       <div id="quizProgress"></div>
       <div id="quizQuestion"></div>
       <div id="quizOptions"></div>
       <div id="quizResult"></div>
-      <button id="startQuizBtn">开始答题</button>
     </div>
 
     <div id="quizAfterPanel" style="display:none;">
@@ -142,7 +172,7 @@
       <button id="quizSaveResultBtn">保存成绩到排行榜</button>
     </div>
 
-    <h3>排行榜（最近的记录）</h3>
+    <h3>排行榜（当前套卷）</h3>
     <table class="quiz-table">
       <thead>
         <tr>
@@ -153,6 +183,7 @@
     </table>
   </div>
 </section>
+
 
 
   <!-- 追逐小游戏 -->
