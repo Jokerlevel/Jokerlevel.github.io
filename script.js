@@ -68,6 +68,28 @@ window.addEventListener('resize', initCanvas);
 initCanvas();
 animateParticles();
 
+// URL 验证函数
+function isValidImageUrl(url) {
+    try {
+        const parsedUrl = new URL(url);
+        // 只允许 http 和 https 协议
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            return false;
+        }
+        // 检查是否是常见图片扩展名或来自可信域名
+        const pathname = parsedUrl.pathname.toLowerCase();
+        const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+        const trustedDomains = ['unsplash.com', 'images.unsplash.com', 'pexels.com', 'pixabay.com'];
+        
+        const hasValidExtension = validExtensions.some(ext => pathname.endsWith(ext));
+        const isTrustedDomain = trustedDomains.some(domain => parsedUrl.hostname.includes(domain));
+        
+        return hasValidExtension || isTrustedDomain;
+    } catch (e) {
+        return false;
+    }
+}
+
 // 本地存储
 function saveData() {
     localStorage.setItem('quizQuestions', JSON.stringify(questions));
@@ -106,11 +128,11 @@ function loadData() {
     if (savedImages) {
         rewardImages = JSON.parse(savedImages);
     } else {
-        // 默认奖励图片
+        // 默认奖励图片 - 使用带参数的Unsplash URLs以提高可靠性
         rewardImages = [
-            'https://images.unsplash.com/photo-1513151233558-d860c5398176',
-            'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7',
-            'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'
+            'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=400&h=300&fit=crop',
+            'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=400&h=300&fit=crop',
+            'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&h=300&fit=crop'
         ];
     }
     
@@ -288,10 +310,15 @@ function viewRewards() {
         gallery.innerHTML = '<p style="text-align: center; color: #666;">暂无奖励图片</p>';
     } else {
         rewardImages.forEach(url => {
-            const img = document.createElement('img');
-            img.src = url;
-            img.alt = '奖励图片';
-            gallery.appendChild(img);
+            if (isValidImageUrl(url)) {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = '奖励图片';
+                img.onerror = function() {
+                    this.style.display = 'none';
+                };
+                gallery.appendChild(img);
+            }
         });
     }
 }
@@ -436,6 +463,11 @@ function addRewardImage() {
         return;
     }
     
+    if (!isValidImageUrl(url)) {
+        alert('请输入有效的图片URL！\n支持的格式：.jpg, .jpeg, .png, .gif, .webp, .svg\n或来自可信域名的图片（如 unsplash.com, pexels.com）');
+        return;
+    }
+    
     rewardImages.push(url);
     saveData();
     displayImages();
@@ -454,21 +486,26 @@ function displayImages() {
     }
     
     rewardImages.forEach((url, index) => {
-        const item = document.createElement('div');
-        item.className = 'image-item';
-        
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = `奖励图片 ${index + 1}`;
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'image-delete-btn';
-        deleteBtn.textContent = '删除';
-        deleteBtn.onclick = () => deleteImage(index);
-        
-        item.appendChild(img);
-        item.appendChild(deleteBtn);
-        display.appendChild(item);
+        if (isValidImageUrl(url)) {
+            const item = document.createElement('div');
+            item.className = 'image-item';
+            
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = `奖励图片 ${index + 1}`;
+            img.onerror = function() {
+                item.style.display = 'none';
+            };
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'image-delete-btn';
+            deleteBtn.textContent = '删除';
+            deleteBtn.onclick = () => deleteImage(index);
+            
+            item.appendChild(img);
+            item.appendChild(deleteBtn);
+            display.appendChild(item);
+        }
     });
 }
 
