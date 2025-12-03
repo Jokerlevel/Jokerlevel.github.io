@@ -5,7 +5,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 // ★★★ 把下面两行改成你自己的项目配置 ★★★
 const supabaseUrl = "https://hhabcapddorjuhwxouwt.supabase.co"; // Project URL
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYWJjYXBkZG9yanVod3hvdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Njg5ODEsImV4cCI6MjA4MDM0NDk4MX0.THw4i3OrGFhSupDHWYvm-ySeZLEQ2Gk8H1AkguddzZI"; // anon public key
+const supabaseAnonKey = "sb_publishable_Yw0qjmTciWxdWMF3Z3zb1Q__E54t4eK"; // anon public key
 // ★★★ 填好即可 ★★★
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
