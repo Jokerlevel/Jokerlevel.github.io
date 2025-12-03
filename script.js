@@ -1,4 +1,18 @@
-// ========== 页面切换 ==========
+// ======================================================
+// Supabase 初始化
+// ======================================================
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+// ★★★ 把下面两行改成你自己的项目配置 ★★★
+const supabaseUrl = "https://YOUR-PROJECT.supabase.co"; // Project URL
+const supabaseAnonKey = "YOUR-ANON-PUBLIC-KEY"; // anon public key
+// ★★★ 填好即可 ★★★
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// ======================================================
+// 通用：页面切换 & 首页按钮跳转
+// ======================================================
 document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = btn.dataset.target;
@@ -6,14 +20,12 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     document.querySelectorAll(".nav-btn").forEach((b) => {
       b.classList.toggle("active", b === btn);
     });
-
     document.querySelectorAll(".page").forEach((page) => {
       page.classList.toggle("page--active", page.id === target);
     });
   });
 });
 
-// 首页 hero 按钮快捷跳转
 document.querySelectorAll(".primary-btn[data-target]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const targetId = btn.dataset.target;
@@ -23,91 +35,112 @@ document.querySelectorAll(".primary-btn[data-target]").forEach((btn) => {
   });
 });
 
-// ========== 回忆相册：动态添加 + localStorage ==========
+// ======================================================
+// ① 回忆相册：使用 Supabase Storage + memories 表
+// ======================================================
 const albumGrid = document.getElementById("albumGrid");
 const albumImageInput = document.getElementById("albumImageInput");
 const albumDateInput = document.getElementById("albumDateInput");
 const albumTextInput = document.getElementById("albumTextInput");
 const addMemoryBtn = document.getElementById("addMemoryBtn");
 
-const ALBUM_KEY = "love_album_dynamic";
+const MEMORIES_TABLE = "memories";
+const BUCKET_NAME = "love-images";
 
-function loadDynamicMemories() {
-  try {
-    const raw = localStorage.getItem(ALBUM_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
+// 渲染来自数据库的动态相册卡片
+function renderDynamicMemories(list) {
+  // 先删掉旧的动态卡片
+  albumGrid.querySelectorAll(".memory-card.dynamic").forEach((el) => el.remove());
 
-function saveDynamicMemories(list) {
-  try {
-    localStorage.setItem(ALBUM_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.warn("保存相册失败：", e);
-  }
-}
-
-function renderDynamicMemories() {
-  const memories = loadDynamicMemories();
-  // 先删除之前渲染的动态卡片
-  albumGrid
-    .querySelectorAll(".memory-card.dynamic")
-    .forEach((el) => el.remove());
-
-  memories.forEach((m) => {
+  list.forEach((m) => {
     const card = document.createElement("div");
     card.className = "memory-card dynamic";
     card.innerHTML = `
       <div class="memory-img-wrap">
-        <img src="${m.img}" alt="我们的回忆" />
+        <img src="${m.img_url}" alt="我们的回忆" />
       </div>
       <div class="memory-info">
-        <div class="memory-date">${m.date || "某一天"}</div>
-        <div class="memory-text">${m.text || ""}</div>
+        <div class="memory-date">${m.taken_at || "某一天"}</div>
+        <div class="memory-text">${m.description || ""}</div>
       </div>
     `;
     albumGrid.appendChild(card);
   });
 }
 
-addMemoryBtn.addEventListener("click", () => {
+// 从 Supabase 读取相册
+async function loadMemories() {
+  const { data, error } = await supabase
+    .from(MEMORIES_TABLE)
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("加载相册失败：", error);
+    return;
+  }
+  renderDynamicMemories(data || []);
+}
+
+// 上传图片 + 写入数据库
+addMemoryBtn.addEventListener("click", async () => {
   const file = albumImageInput.files[0];
   if (!file) {
     alert("先选一张照片吧～");
     return;
   }
 
-  const date = albumDateInput.value;
-  const text = albumTextInput.value.trim();
+  const date = albumDateInput.value || null;
+  const text = albumTextInput.value.trim() || "这一刻很值得被记住。";
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const base64 = e.target.result;
-    const list = loadDynamicMemories();
-    list.push({
-      img: base64,
-      date: date || "某一天",
-      text: text || "这一刻很值得被记住。",
-      createdAt: Date.now(),
+  try {
+    // 1. 上传到 Supabase Storage
+    const filePath = `memories/${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error(uploadError);
+      alert("上传图片失败，可以稍后再试一下～");
+      return;
+    }
+
+    // 2. 获取公开访问 URL
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+
+    // 3. 插入一条相册记录
+    const { error: insertError } = await supabase.from(MEMORIES_TABLE).insert({
+      img_url: publicUrl,
+      taken_at: date,
+      description: text,
     });
-    saveDynamicMemories(list);
-    renderDynamicMemories();
 
+    if (insertError) {
+      console.error(insertError);
+      alert("保存相册记录失败～");
+      return;
+    }
+
+    // 4. 清空输入 & 重新加载
     albumImageInput.value = "";
     albumDateInput.value = "";
     albumTextInput.value = "";
-  };
-  reader.readAsDataURL(file);
+    await loadMemories();
+  } catch (e) {
+    console.error(e);
+    alert("出现了一点小问题，可以稍后再试试～");
+  }
 });
 
-// 初始化相册
-renderDynamicMemories();
+// 页面加载时先读一次相册
+loadMemories();
 
-// ========== 情侣默契挑战 ==========
-
+// ======================================================
+// ② 情侣默契挑战 + 爱心粒子（保留本地逻辑）
+// ======================================================
 const quizQuestions = [
   {
     type: "single",
@@ -165,12 +198,9 @@ function handleQuizAnswer(index) {
 
   optionButtons.forEach((btn, idx) => {
     btn.disabled = true;
-    if (idx === q.answerIndex) {
-      btn.classList.add("correct");
-    }
-    if (idx === index && index !== q.answerIndex) {
+    if (idx === q.answerIndex) btn.classList.add("correct");
+    if (idx === index && index !== q.answerIndex)
       btn.classList.add("wrong");
-    }
   });
 
   if (index === q.answerIndex) {
@@ -207,7 +237,7 @@ startQuizBtn.addEventListener("click", () => {
   renderQuizQuestion();
 });
 
-// ========== 爱心粒子（简单版） ==========
+// 爱心粒子
 const canvas = document.getElementById("heartCanvas");
 const ctx = canvas.getContext("2d");
 let hearts = [];
@@ -232,10 +262,7 @@ function triggerHearts() {
       life: 1,
     });
   }
-
-  if (!heartTimer) {
-    heartTimer = requestAnimationFrame(drawHearts);
-  }
+  if (!heartTimer) heartTimer = requestAnimationFrame(drawHearts);
 }
 
 function drawHearts() {
@@ -245,9 +272,7 @@ function drawHearts() {
     h.y += h.vy;
     h.vy += 0.08;
     h.life -= 0.01;
-
     if (h.life <= 0) return;
-
     ctx.save();
     ctx.translate(h.x, h.y);
     ctx.scale(h.size * h.life * 0.1, h.size * h.life * 0.1);
@@ -259,7 +284,6 @@ function drawHearts() {
     ctx.fill();
     ctx.restore();
   });
-
   hearts = hearts.filter((h) => h.life > 0);
   if (hearts.length > 0) {
     heartTimer = requestAnimationFrame(drawHearts);
@@ -268,56 +292,32 @@ function drawHearts() {
   }
 }
 
-// ========== 愿望清单：可新增 + 打勾 + localStorage ==========
-const TODO_KEY = "love_wishes";
-
+// ======================================================
+// ③ 愿望清单：Supabase wishes 表
+// ======================================================
 const todoListEl = document.getElementById("todoList");
 const newWishInput = document.getElementById("newWishInput");
 const addWishBtn = document.getElementById("addWishBtn");
+const WISHES_TABLE = "wishes";
 
-const defaultWishes = [
-  { text: "一起去海边看一次日出", done: false },
-  { text: "看一场只属于我们的烟花", done: false },
-  { text: "在某个陌生城市迷路，然后一起找到回去的路", done: false },
-  { text: "很多年以后，还能一起打开这个网站回忆今天", done: false },
-];
-
-function loadWishes() {
-  try {
-    const raw = localStorage.getItem(TODO_KEY);
-    if (!raw) return defaultWishes;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return defaultWishes;
-    }
-    return parsed;
-  } catch {
-    return defaultWishes;
-  }
-}
-
-let wishes = loadWishes();
-
-function saveWishes() {
-  try {
-    localStorage.setItem(TODO_KEY, JSON.stringify(wishes));
-  } catch (e) {
-    console.warn("保存愿望清单失败：", e);
-  }
-}
+let wishes = [];
 
 function renderWishes() {
   todoListEl.innerHTML = "";
-  wishes.forEach((w, index) => {
+  wishes.forEach((w) => {
     const li = document.createElement("li");
     li.className = "todo-item";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = !!w.done;
-    checkbox.addEventListener("change", () => {
-      wishes[index].done = checkbox.checked;
-      saveWishes();
+    checkbox.addEventListener("change", async () => {
+      const { error } = await supabase
+        .from(WISHES_TABLE)
+        .update({ done: checkbox.checked })
+        .eq("id", w.id);
+      if (error) console.error(error);
+      else w.done = checkbox.checked;
       renderWishes();
     });
 
@@ -331,21 +331,48 @@ function renderWishes() {
   });
 }
 
-renderWishes();
+async function loadWishes() {
+  const { data, error } = await supabase
+    .from(WISHES_TABLE)
+    .select("*")
+    .order("created_at", { ascending: true });
 
-addWishBtn.addEventListener("click", () => {
+  if (error) {
+    console.error("加载愿望清单失败：", error);
+    return;
+  }
+  wishes = data || [];
+  renderWishes();
+}
+
+addWishBtn.addEventListener("click", async () => {
   const text = newWishInput.value.trim();
   if (!text) {
     alert("先写下一个小愿望吧～");
     return;
   }
-  wishes.push({ text, done: false });
+  const { data, error } = await supabase
+    .from(WISHES_TABLE)
+    .insert({ text, done: false })
+    .select()
+    .single();
+
+  if (error) {
+    console.error(error);
+    alert("添加愿望失败～");
+    return;
+  }
   newWishInput.value = "";
-  saveWishes();
+  wishes.push(data);
   renderWishes();
 });
 
-// ========== 追逐小游戏：LM 追 Z.Z.L ==========
+// 初次加载愿望清单
+loadWishes();
+
+// ======================================================
+// ④ 追逐小游戏：沿用之前的逻辑（本地）
+// ======================================================
 const gameCanvas = document.getElementById("gameCanvas");
 const gctx = gameCanvas.getContext("2d");
 const startGameBtn = document.getElementById("startGameBtn");
@@ -357,8 +384,8 @@ let gameRunning = false;
 let lastTime = 0;
 
 let groundY;
-let worldSpeed = 140; // 障碍移动速度
-let gap; // LM 与 Z.Z.L 之间的距离数值，越小越接近
+let worldSpeed = 140;
+let gap;
 
 const ME_HEAD_KEY = "love_me_head";
 const HER_HEAD_KEY = "love_her_head";
@@ -366,40 +393,22 @@ const HER_HEAD_KEY = "love_her_head";
 let meHeadImg = null;
 let herHeadImg = null;
 
-// 默认画头像：彩色圆圈 + 字母
-function drawDefaultHead(ctx, x, y, r, label) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffb6c1";
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.font = r * 0.9 + "px system-ui";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, x, y + 1);
-  ctx.restore();
+function drawDefaultHead(ctx2, x, y, r, label) {
+  ctx2.save();
+  ctx2.beginPath();
+  ctx2.arc(x, y, r, 0, Math.PI * 2);
+  ctx2.fillStyle = "#ffb6c1";
+  ctx2.fill();
+  ctx2.fillStyle = "#fff";
+  ctx2.font = r * 0.9 + "px system-ui";
+  ctx2.textAlign = "center";
+  ctx2.textBaseline = "middle";
+  ctx2.fillText(label, x, y + 1);
+  ctx2.restore();
 }
 
-// 角色对象
-const lm = {
-  x: 120,
-  y: 0,
-  vy: 0,
-  width: 40,
-  height: 60,
-  onGround: false,
-};
-
-const zl = {
-  x: 260,
-  y: 0,
-  vy: 0,
-  width: 40,
-  height: 60,
-  onGround: false,
-};
-
+const lm = { x: 120, y: 0, vy: 0, width: 40, height: 60, onGround: false };
+const zl = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 let obstacles = [];
 
 function resizeGameCanvas() {
@@ -413,7 +422,7 @@ window.addEventListener("resize", resizeGameCanvas);
 function resetGame() {
   gameRunning = false;
   lastTime = 0;
-  gap = 140; // 初始距离
+  gap = 140;
   lm.y = groundY - lm.height;
   zl.y = groundY - zl.height;
   lm.vy = zl.vy = 0;
@@ -421,10 +430,8 @@ function resetGame() {
   obstacles = [];
   gameStatus.textContent = "准备好了就点“开始游戏”，按空格一起跳跃～";
 }
-
 resetGame();
 
-// 生成障碍
 function spawnObstacle() {
   const width = 26 + Math.random() * 18;
   const height = 30 + Math.random() * 20;
@@ -438,9 +445,8 @@ function spawnObstacle() {
 }
 
 let obstacleTimer = 0;
-const obstacleInterval = 1400; // 毫秒
+const obstacleInterval = 1400;
 
-// 跳跃
 function jump() {
   if (lm.onGround) {
     lm.vy = -340;
@@ -459,7 +465,6 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-// 头像上传与存储
 function setupHeadUpload(inputEl, storageKey, setImgCallback) {
   inputEl.addEventListener("change", () => {
     const file = inputEl.files[0];
@@ -479,7 +484,6 @@ function setupHeadUpload(inputEl, storageKey, setImgCallback) {
     reader.readAsDataURL(file);
   });
 
-  // 读取已保存的
   try {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
@@ -490,17 +494,10 @@ function setupHeadUpload(inputEl, storageKey, setImgCallback) {
   } catch {}
 }
 
-setupHeadUpload(meHeadInput, ME_HEAD_KEY, (img) => {
-  meHeadImg = img;
-});
+setupHeadUpload(meHeadInput, ME_HEAD_KEY, (img) => (meHeadImg = img));
+setupHeadUpload(herHeadInput, HER_HEAD_KEY, (img) => (herHeadImg = img));
 
-setupHeadUpload(herHeadInput, HER_HEAD_KEY, (img) => {
-  herHeadImg = img;
-});
-
-// 游戏主循环
 function updateGame(dt) {
-  // 重力
   const g = 900;
   [lm, zl].forEach((ch) => {
     ch.vy += g * dt;
@@ -512,7 +509,6 @@ function updateGame(dt) {
     }
   });
 
-  // 障碍移动
   obstacles.forEach((ob) => {
     ob.x -= worldSpeed * dt;
   });
@@ -524,70 +520,29 @@ function updateGame(dt) {
     spawnObstacle();
   }
 
-  // 检测 LM 被绊倒
   obstacles.forEach((ob) => {
     if (!ob.hitLM && ob.x < lm.x + lm.width && ob.x + ob.width > lm.x) {
       const lmBottom = lm.y + lm.height;
       if (lmBottom > ob.y + 4) {
         ob.hitLM = true;
-        gap += 80; // 被绊倒距离又拉开
+        gap += 80;
         gameStatus.textContent = "LM 被障碍绊了一下，又离 Z.Z.L 远了一点 😭";
       }
     }
   });
 
-  // 追逐进度：LM 略快于 Z.Z.L
-  const chaseSpeed = 28; // 每秒缩短的“距离值”
+  const chaseSpeed = 28;
   gap -= chaseSpeed * dt;
   if (gap <= 40) {
-    // 追到
     gameStatus.textContent = "LM 终于追到 Z.Z.L 啦，奖励一个大大大拥抱！🤍";
     gameRunning = false;
   }
 }
 
-function drawGame() {
-  gctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-  // 地面
-  gctx.fillStyle = "#ffe6f0";
-  gctx.fillRect(0, groundY, gameCanvas.width, gameCanvas.height - groundY);
-
-  // 绘制障碍
-  gctx.fillStyle = "#ffb3c6";
-  obstacles.forEach((ob) => {
-    gctx.fillRect(ob.x, ob.y, ob.width, ob.height);
-  });
-
-  // 画 LM
-  drawCharacter(lm, "#ff7b9c", meHeadImg, "LM");
-
-  // 画 Z.Z.L
-  drawCharacter(zl, "#ff9bb3", herHeadImg, "ZL");
-
-  // 画追逐距离条
-  const barWidth = 200;
-  const barHeight = 10;
-  const barX = gameCanvas.width - barWidth - 16;
-  const barY = 16;
-  const maxGap = 160;
-  const ratio = Math.max(0, Math.min(1, 1 - gap / maxGap));
-
-  gctx.fillStyle = "rgba(0,0,0,0.1)";
-  gctx.fillRect(barX, barY, barWidth, barHeight);
-  gctx.fillStyle = "#ff7b9c";
-  gctx.fillRect(barX, barY, barWidth * ratio, barHeight);
-  gctx.font = "11px system-ui";
-  gctx.fillStyle = "#555";
-  gctx.fillText("追上进度", barX, barY - 4);
-}
-
 function drawCharacter(ch, color, headImg, label) {
-  // 身体
   gctx.fillStyle = color;
   gctx.fillRect(ch.x, ch.y, ch.width, ch.height);
 
-  // 头部
   const headRadius = 18;
   const headX = ch.x + ch.width / 2;
   const headY = ch.y - headRadius + 4;
@@ -611,6 +566,35 @@ function drawCharacter(ch, color, headImg, label) {
   }
 }
 
+function drawGame() {
+  gctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+  gctx.fillStyle = "#ffe6f0";
+  gctx.fillRect(0, groundY, gameCanvas.width, gameCanvas.height - groundY);
+
+  gctx.fillStyle = "#ffb3c6";
+  obstacles.forEach((ob) => {
+    gctx.fillRect(ob.x, ob.y, ob.width, ob.height);
+  });
+
+  drawCharacter(lm, "#ff7b9c", meHeadImg, "LM");
+  drawCharacter(zl, "#ff9bb3", herHeadImg, "ZL");
+
+  const barWidth = 200;
+  const barHeight = 10;
+  const barX = gameCanvas.width - barWidth - 16;
+  const barY = 16;
+  const maxGap = 160;
+  const ratio = Math.max(0, Math.min(1, 1 - gap / maxGap));
+
+  gctx.fillStyle = "rgba(0,0,0,0.1)";
+  gctx.fillRect(barX, barY, barWidth, barHeight);
+  gctx.fillStyle = "#ff7b9c";
+  gctx.fillRect(barX, barY, barWidth * ratio, barHeight);
+  gctx.font = "11px system-ui";
+  gctx.fillStyle = "#555";
+  gctx.fillText("追上进度", barX, barY - 4);
+}
+
 function gameLoop(timestamp) {
   if (!gameRunning) return;
   if (!lastTime) lastTime = timestamp;
@@ -619,7 +603,6 @@ function gameLoop(timestamp) {
 
   updateGame(dt);
   drawGame();
-
   requestAnimationFrame(gameLoop);
 }
 
@@ -631,18 +614,17 @@ startGameBtn.addEventListener("click", () => {
   requestAnimationFrame(gameLoop);
 });
 
-// 初始画一次游戏画面
 drawGame();
 
-// ========== 在一起的天数 ==========
-const startDate = new Date("2023-10-01"); // ★ 把这里改成你们真实的在一起日期
-
+// ======================================================
+// ⑤ 在一起的天数
+// ======================================================
+const startDate = new Date("2023-10-01"); // ★ 改成你们的在一起日期
 function updateDaysCounter() {
   const now = new Date();
   const diff = now - startDate;
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  document.getElementById(
-    "daysCounter"
-  ).textContent = `已经陪你走过 ${days} 天啦`;
+  const el = document.getElementById("daysCounter");
+  if (el) el.textContent = `已经陪你走过 ${days} 天啦`;
 }
 updateDaysCounter();
