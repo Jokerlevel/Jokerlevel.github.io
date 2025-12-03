@@ -262,29 +262,21 @@ loadMemories();
 // ======================================================
 // ② 情侣默契挑战 + 爱心粒子（保留本地逻辑）
 // ======================================================
-const quizQuestions = [
-  {
-    type: "single",
-    question: "我们第一次认真聊天，大概是在哪个阶段？",
-    options: ["暑假某一天", "军训那段时间", "开学后的某个晚上", "我忘了（不许选）"],
-    answerIndex: 2,
-  },
-  {
-    type: "single",
-    question: "Z.Z.L 最有可能突然发来的消息是？",
-    options: ["在干嘛", "我好无聊", "你睡了吗", "我去写作业了"],
-    answerIndex: 0,
-  },
-  {
-    type: "single",
-    question: "如果 LM 突然一天没回信息，Z.Z.L 第一反应是什么？",
-    options: ["他又睡过头了", "他去打游戏了", "他在忙实验/写代码", "他不要我了"],
-    answerIndex: 2,
-  },
-];
+// ======================================================
+// ② 情侣默契挑战：Supabase 题库 + 排行榜
+// ======================================================
+const QUIZ_QUESTIONS_TABLE = "quiz_questions";
+const QUIZ_RESULTS_TABLE = "quiz_results";
 
-let currentQuizIndex = -1;
-let quizScore = 0;
+const quizEditModeBtn = document.getElementById("quizEditModeBtn");
+const quizPlayModeBtn = document.getElementById("quizPlayModeBtn");
+const quizEditPanel = document.getElementById("quizEditPanel");
+const quizPlayPanel = document.getElementById("quizPlayPanel");
+
+const quizEditInput = document.getElementById("quizEditInput");
+const quizAddQuestionBtn = document.getElementById("quizAddQuestionBtn");
+const quizQuestionList = document.getElementById("quizQuestionList");
+const quizClearAllBtn = document.getElementById("quizClearAllBtn");
 
 const quizQuestionEl = document.getElementById("quizQuestion");
 const quizOptionsEl = document.getElementById("quizOptions");
@@ -292,13 +284,141 @@ const quizProgressEl = document.getElementById("quizProgress");
 const quizResultEl = document.getElementById("quizResult");
 const startQuizBtn = document.getElementById("startQuizBtn");
 
-function renderQuizQuestion() {
+const quizAfterPanel = document.getElementById("quizAfterPanel");
+const quizFinalText = document.getElementById("quizFinalText");
+const quizNameInput = document.getElementById("quizNameInput");
+const quizSaveResultBtn = document.getElementById("quizSaveResultBtn");
+const quizLeaderboardBody = document.getElementById("quizLeaderboard");
+
+let quizQuestions = [];
+let currentQuizIndex = -1;
+let quizScore = 0;
+let quizTotal = 0;
+
+// 切换模式：出题 / 做题
+quizEditModeBtn.addEventListener("click", () => {
+  quizEditPanel.style.display = "block";
+  quizPlayPanel.style.display = "none";
+});
+
+quizPlayModeBtn.addEventListener("click", () => {
+  quizEditPanel.style.display = "none";
+  quizPlayPanel.style.display = "block";
+  loadQuizQuestions();
+  loadQuizLeaderboard();
+});
+
+// 从 Supabase 加载题目
+async function loadQuizQuestions() {
+  const { data, error } = await supabase
+    .from(QUIZ_QUESTIONS_TABLE)
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("加载题目失败：", error);
+    return;
+  }
+  quizQuestions = data || [];
+  renderQuizQuestionList();
+}
+
+// 渲染出题面板中的题目列表
+function renderQuizQuestionList() {
+  quizQuestionList.innerHTML = "";
+  quizQuestions.forEach((q, idx) => {
+    const li = document.createElement("li");
+    const opts = q.options.join(" / ");
+    li.textContent = `${idx + 1}. ${q.question}  [${opts}]  正确：${q.options[q.answer_index]}`;
+    quizQuestionList.appendChild(li);
+  });
+}
+
+// 把编辑区的文本解析成一题并插入数据库
+quizAddQuestionBtn.addEventListener("click", async () => {
+  const raw = quizEditInput.value.trim();
+  if (!raw) {
+    alert("先写点内容吧～");
+    return;
+  }
+  const lines = raw.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (lines.length < 2) {
+    alert("至少需要 1 行题目 + 1 行选项");
+    return;
+  }
+  const question = lines[0];
+  const options = [];
+  let answerIndex = -1;
+  lines.slice(1).forEach((line) => {
+    if (line.startsWith("*")) {
+      options.push(line.slice(1));
+      answerIndex = options.length - 1;
+    } else {
+      options.push(line);
+    }
+  });
+  if (options.length === 0 || answerIndex === -1) {
+    alert("选项里至少有一个要用 * 标出正确答案哦～");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from(QUIZ_QUESTIONS_TABLE)
+    .insert({
+      question,
+      options,
+      answer_index: answerIndex,
+    })
+    .select();
+
+  if (error) {
+    console.error(error);
+    alert("添加题目失败：" + error.message);
+    return;
+  }
+
+  quizEditInput.value = "";
+  quizQuestions.push(data[0]);
+  renderQuizQuestionList();
+});
+
+// 清空全部题目
+quizClearAllBtn.addEventListener("click", async () => {
+  if (!confirm("确定要清空所有题目吗？")) return;
+  const { error } = await supabase.from(QUIZ_QUESTIONS_TABLE).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  if (error) {
+    console.error(error);
+    alert("清空失败：" + error.message);
+    return;
+  }
+  quizQuestions = [];
+  renderQuizQuestionList();
+});
+
+// 开始答题
+startQuizBtn.addEventListener("click", async () => {
+  await loadQuizQuestions();
+  if (!quizQuestions.length) {
+    alert("现在还没有题目呢，先去“我来出题”那里出几题吧～");
+    return;
+  }
+  quizScore = 0;
+  currentQuizIndex = 0;
+  quizTotal = quizQuestions.length;
+  startQuizBtn.disabled = true;
+  startQuizBtn.textContent = "作答中...";
+  quizAfterPanel.style.display = "none";
+  renderCurrentQuizQuestion();
+});
+
+function renderCurrentQuizQuestion() {
   const q = quizQuestions[currentQuizIndex];
   if (!q) return;
 
   quizQuestionEl.textContent = q.question;
   quizOptionsEl.innerHTML = "";
   quizResultEl.textContent = "";
+  quizProgressEl.textContent = `第 ${currentQuizIndex + 1} / ${quizTotal} 题`;
 
   q.options.forEach((opt, idx) => {
     const btn = document.createElement("button");
@@ -307,10 +427,6 @@ function renderQuizQuestion() {
     btn.addEventListener("click", () => handleQuizAnswer(idx));
     quizOptionsEl.appendChild(btn);
   });
-
-  quizProgressEl.textContent = `第 ${currentQuizIndex + 1} / ${
-    quizQuestions.length
-  } 题`;
 }
 
 function handleQuizAnswer(index) {
@@ -319,44 +435,92 @@ function handleQuizAnswer(index) {
 
   optionButtons.forEach((btn, idx) => {
     btn.disabled = true;
-    if (idx === q.answerIndex) btn.classList.add("correct");
-    if (idx === index && index !== q.answerIndex)
-      btn.classList.add("wrong");
+    if (idx === q.answer_index) btn.classList.add("correct");
+    if (idx === index && idx !== q.answer_index) btn.classList.add("wrong");
   });
 
-  if (index === q.answerIndex) {
+  if (index === q.answer_index) {
     quizScore++;
-    quizResultEl.textContent = "答对啦！LM 果然很了解 Z.Z.L 💕";
+    quizResultEl.textContent = "这题答对啦 💕";
     triggerHearts();
   } else {
-    quizResultEl.textContent = "这题小小扣分，下次一定对～";
+    quizResultEl.textContent = "下题一定对～";
   }
 
   setTimeout(() => {
     currentQuizIndex++;
-    if (currentQuizIndex < quizQuestions.length) {
-      renderQuizQuestion();
+    if (currentQuizIndex < quizTotal) {
+      renderCurrentQuizQuestion();
     } else {
-      quizQuestionEl.textContent = "挑战结束啦！";
-      quizOptionsEl.innerHTML = "";
-      const percent = Math.round(
-        (quizScore / quizQuestions.length) * 100
-      );
-      quizProgressEl.textContent = "";
-      quizResultEl.textContent = `默契度 ${percent}% ，但在 LM 心里永远是 100% ❤️`;
-      startQuizBtn.textContent = "再来一轮";
-      startQuizBtn.disabled = false;
+      finishQuiz();
     }
-  }, 1200);
+  }, 1000);
 }
 
-startQuizBtn.addEventListener("click", () => {
-  currentQuizIndex = 0;
-  quizScore = 0;
-  startQuizBtn.disabled = true;
-  startQuizBtn.textContent = "作答中...";
-  renderQuizQuestion();
+function finishQuiz() {
+  quizQuestionEl.textContent = "挑战结束！";
+  quizOptionsEl.innerHTML = "";
+  quizProgressEl.textContent = "";
+  const percent = Math.round((quizScore / quizTotal) * 100);
+  quizResultEl.textContent = `本次得分：${quizScore} / ${quizTotal}，默契度 ${percent}%`;
+  startQuizBtn.disabled = false;
+  startQuizBtn.textContent = "再做一遍";
+  quizAfterPanel.style.display = "block";
+  quizFinalText.textContent = `写下你的名字，把这次的成绩存进排行榜吧～`;
+}
+
+// 保存成绩到排行榜
+quizSaveResultBtn.addEventListener("click", async () => {
+  const name = quizNameInput.value.trim();
+  if (!name) {
+    alert("写个名字吧～");
+    return;
+  }
+  const { error } = await supabase.from(QUIZ_RESULTS_TABLE).insert({
+    name,
+    score: quizScore,
+    total: quizTotal,
+  });
+  if (error) {
+    console.error(error);
+    alert("保存成绩失败：" + error.message);
+    return;
+  }
+  quizAfterPanel.style.display = "none";
+  quizNameInput.value = "";
+  await loadQuizLeaderboard();
 });
+
+// 加载排行榜
+async function loadQuizLeaderboard() {
+  const { data, error } = await supabase
+    .from(QUIZ_RESULTS_TABLE)
+    .select("*")
+    .order("score", { ascending: false })
+    .order("created_at", { ascending: true })
+    .limit(20);
+
+  if (error) {
+    console.error("加载排行榜失败：", error);
+    return;
+  }
+  quizLeaderboardBody.innerHTML = "";
+  (data || []).forEach((row) => {
+    const tr = document.createElement("tr");
+    const date = new Date(row.created_at);
+    const timeStr = date.toLocaleString();
+    tr.innerHTML = `
+      <td>${row.name}</td>
+      <td>${row.score} / ${row.total}</td>
+      <td>${timeStr}</td>
+    `;
+    quizLeaderboardBody.appendChild(tr);
+  });
+}
+
+// 默认打开“开始答题”模式
+quizPlayModeBtn.click();
+
 
 // 爱心粒子
 const canvas = document.getElementById("heartCanvas");
