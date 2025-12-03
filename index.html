@@ -1,117 +1,155 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>趣味答题网站</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <title>给她的小宇宙 ✨</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <canvas id="particles"></canvas>
-    
-    <div class="container">
-        <header>
-            <h1>🎯 趣味答题挑战</h1>
-            <p class="subtitle">答对题目解锁精彩奖励！</p>
-        </header>
+  <header class="site-header">
+    <div class="logo">J &amp; H</div>
+    <nav class="nav">
+      <button class="nav-btn active" data-target="home">首页</button>
+      <button class="nav-btn" data-target="album">回忆相册</button>
+      <button class="nav-btn" data-target="quiz">默契挑战</button>
+      <button class="nav-btn" data-target="game">抓住我</button>
+      <button class="nav-btn" data-target="future">未来清单</button>
+    </nav>
+  </header>
 
-        <!-- 模式选择 -->
-        <div id="mode-selector" class="mode-selector">
-            <button class="mode-btn" onclick="showQuizMode()">🎮 答题模式</button>
-            <button class="mode-btn" onclick="showAdminMode()">⚙️ 管理模式</button>
+  <!-- 首页 -->
+  <section id="home" class="page page--active">
+    <div class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <p class="hero-tagline">这是只属于我们两个人的小网站 💫</p>
+        <h1 class="hero-title">给<span class="highlight">你</span>的一整个宇宙</h1>
+        <p class="hero-text">
+          这里会慢慢装满我们的照片、故事、小游戏和计划。<br />
+          每一次打开，都算是一次约会。
+        </p>
+        <button class="primary-btn" data-target="album">
+          进入我们的回忆相册 💌
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 回忆相册 -->
+  <section id="album" class="page">
+    <h2 class="section-title">回忆相册 📷</h2>
+    <p class="section-subtitle">一点点，把关于你的每一帧都收集起来。</p>
+
+    <div class="album-grid" id="albumGrid">
+      <!-- 下面这些只是示例，你可以换成自己图片路径 -->
+      <div class="memory-card">
+        <div class="memory-img-wrap">
+          <img src="img/her_bus.jpg" alt="她在车上的那张自拍" />
         </div>
-
-        <!-- 答题模式 -->
-        <div id="quiz-section" class="section hidden">
-            <div class="quiz-container">
-                <div id="question-container">
-                    <div class="question-header">
-                        <span class="question-number">题目 <span id="current-question">1</span> / <span id="total-questions">0</span></span>
-                        <span class="score">得分: <span id="score">0</span></span>
-                    </div>
-                    <h2 id="question-text">请点击开始答题</h2>
-                    <div id="options-container" class="options-container"></div>
-                    <button id="next-btn" class="hidden" onclick="nextQuestion()">下一题</button>
-                </div>
-                <button id="start-btn" onclick="startQuiz()">开始答题</button>
-            </div>
-
-            <!-- 结果展示 -->
-            <div id="result-section" class="result-section hidden">
-                <h2>🎉 答题完成！</h2>
-                <p class="final-score">你的得分: <span id="final-score">0</span> / <span id="max-score">0</span></p>
-                <p class="result-message" id="result-message"></p>
-                <button onclick="viewRewards()" class="reward-btn">查看奖励图片</button>
-                <button onclick="restartQuiz()" class="restart-btn">重新开始</button>
-            </div>
+        <div class="memory-info">
+          <div class="memory-date">2023 · 某个回家的路上</div>
+          <div class="memory-text">那天你戴着耳机，我只想坐你旁边一辈子。</div>
         </div>
+      </div>
 
-        <!-- 管理模式 -->
-        <div id="admin-section" class="section hidden">
-            <div class="admin-container">
-                <h2>📝 题目管理</h2>
-                
-                <!-- 添加题目表单 -->
-                <div class="form-container">
-                    <h3>添加新题目</h3>
-                    <form id="question-form">
-                        <div class="form-group">
-                            <label>题目类型:</label>
-                            <select id="question-type" onchange="updateFormFields()">
-                                <option value="multiple">选择题</option>
-                                <option value="boolean">判断题</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>题目内容:</label>
-                            <textarea id="question-content" placeholder="请输入题目内容" required></textarea>
-                        </div>
-                        
-                        <div id="options-form" class="form-group">
-                            <label>选项 (每行一个，正确答案前加 * 号):</label>
-                            <textarea id="question-options" placeholder="例如:&#10;* 正确答案&#10;错误答案1&#10;错误答案2&#10;错误答案3" rows="6"></textarea>
-                        </div>
-                        
-                        <div id="boolean-form" class="form-group hidden">
-                            <label>正确答案:</label>
-                            <select id="boolean-answer">
-                                <option value="true">正确</option>
-                                <option value="false">错误</option>
-                            </select>
-                        </div>
-                        
-                        <button type="submit" class="submit-btn">添加题目</button>
-                    </form>
-                </div>
-
-                <!-- 题目列表 -->
-                <div class="questions-list">
-                    <h3>当前题目列表</h3>
-                    <div id="questions-display"></div>
-                </div>
-
-                <!-- 图片管理 -->
-                <div class="images-container">
-                    <h3>奖励图片管理</h3>
-                    <div class="form-group">
-                        <label>图片URL:</label>
-                        <input type="text" id="image-url" placeholder="请输入图片URL">
-                        <button onclick="addRewardImage()" class="submit-btn">添加图片</button>
-                    </div>
-                    <div id="images-display" class="images-gallery"></div>
-                </div>
-            </div>
+      <div class="memory-card">
+        <div class="memory-img-wrap">
+          <img src="img/you_id.jpg" alt="你的证件照" />
         </div>
-
-        <!-- 奖励图片展示 -->
-        <div id="rewards-section" class="section hidden">
-            <h2>🎁 你的奖励</h2>
-            <div id="rewards-gallery" class="rewards-gallery"></div>
-            <button onclick="backToResults()" class="back-btn">返回</button>
+        <div class="memory-info">
+          <div class="memory-date">我们</div>
+          <div class="memory-text">是两张照片里的两个人，也是同一个故事里的主角。</div>
         </div>
+      </div>
+
+      <div class="memory-card">
+        <div class="memory-img-wrap">
+          <img src="img/her_garden.jpg" alt="她在亭子里" />
+        </div>
+        <div class="memory-info">
+          <div class="memory-date">那天在公园</div>
+          <div class="memory-text">阳光很乖，正好落在你肩上。</div>
+        </div>
+      </div>
+
+      <div class="memory-card">
+        <div class="memory-img-wrap">
+          <img src="img/her_vsign.jpg" alt="她比耶" />
+        </div>
+        <div class="memory-info">
+          <div class="memory-date">某个晚上的合照</div>
+          <div class="memory-text">你举着剪刀手，而我举着整颗心给你。</div>
+        </div>
+      </div>
+    </div>
+    <p class="section-tip">📌 你可以随时在 <code>albumGrid</code> 里继续往下加卡片。</p>
+  </section>
+
+  <!-- 默契挑战 -->
+  <section id="quiz" class="page">
+    <h2 class="section-title">情侣默契挑战 💞</h2>
+    <p class="section-subtitle">
+      看看你对我（自恋），或者我对你，到底有多了解。
+    </p>
+
+    <div class="quiz-box">
+      <div id="quizQuestion" class="quiz-question">点击开始吧～</div>
+      <div id="quizOptions" class="quiz-options"></div>
+      <div class="quiz-footer">
+        <button id="startQuizBtn" class="primary-btn">开始答题</button>
+        <div id="quizProgress" class="quiz-progress"></div>
+      </div>
+      <div id="quizResult" class="quiz-result"></div>
     </div>
 
-    <script src="script.js"></script>
+    <canvas id="heartCanvas" class="heart-canvas"></canvas>
+  </section>
+
+  <!-- 抓住我小游戏 -->
+  <section id="game" class="page">
+    <h2 class="section-title">抓住我就给你亲亲游戏 😆</h2>
+    <p class="section-subtitle">用鼠标试试看能不能点到下面那个小按钮。</p>
+
+    <div class="game-area" id="gameArea">
+      <button id="runBtn" class="run-btn">来抓我呀 💗</button>
+    </div>
+    <div id="gameMsg" class="game-msg"></div>
+  </section>
+
+  <!-- 未来清单 -->
+  <section id="future" class="page">
+    <h2 class="section-title">我们的未来清单 📝</h2>
+    <p class="section-subtitle">先写下来，慢慢一起去实现。</p>
+
+    <ul class="todo-list" id="todoList">
+      <li class="todo-item">
+        <input type="checkbox" disabled />
+        <span>一起去海边看一次日出</span>
+      </li>
+      <li class="todo-item">
+        <input type="checkbox" disabled />
+        <span>看一场只属于我们的烟花</span>
+      </li>
+      <li class="todo-item">
+        <input type="checkbox" disabled />
+        <span>在某个陌生城市迷路，然后一起找到回去的路</span>
+      </li>
+      <li class="todo-item">
+        <input type="checkbox" disabled />
+        <span>在很久很久以后，还能一起打开这个网站回忆今天</span>
+      </li>
+    </ul>
+
+    <p class="section-tip">
+      以后可以把这一块做成真正可勾选、可新增的 TODO（在 <code>script.js</code> 里实现 localStorage 持久化）。
+    </p>
+  </section>
+
+  <footer class="site-footer">
+    Made with ❤️ for her · <span id="daysCounter"></span>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
