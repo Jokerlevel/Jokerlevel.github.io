@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味答题网站</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="particles"></canvas>
+    
+    <div class="container">
+        <header>
+            <h1>🎯 趣味答题挑战</h1>
+            <p class="subtitle">答对题目解锁精彩奖励！</p>
+        </header>
+
+        <!-- 模式选择 -->
+        <div id="mode-selector" class="mode-selector">
+            <button class="mode-btn" onclick="showQuizMode()">🎮 答题模式</button>
+            <button class="mode-btn" onclick="showAdminMode()">⚙️ 管理模式</button>
+        </div>
+
+        <!-- 答题模式 -->
+        <div id="quiz-section" class="section hidden">
+            <div class="quiz-container">
+                <div id="question-container">
+                    <div class="question-header">
+                        <span class="question-number">题目 <span id="current-question">1</span> / <span id="total-questions">0</span></span>
+                        <span class="score">得分: <span id="score">0</span></span>
+                    </div>
+                    <h2 id="question-text">请点击开始答题</h2>
+                    <div id="options-container" class="options-container"></div>
+                    <button id="next-btn" class="hidden" onclick="nextQuestion()">下一题</button>
+                </div>
+                <button id="start-btn" onclick="startQuiz()">开始答题</button>
+            </div>
+
+            <!-- 结果展示 -->
+            <div id="result-section" class="result-section hidden">
+                <h2>🎉 答题完成！</h2>
+                <p class="final-score">你的得分: <span id="final-score">0</span> / <span id="max-score">0</span></p>
+                <p class="result-message" id="result-message"></p>
+                <button onclick="viewRewards()" class="reward-btn">查看奖励图片</button>
+                <button onclick="restartQuiz()" class="restart-btn">重新开始</button>
+            </div>
+        </div>
+
+        <!-- 管理模式 -->
+        <div id="admin-section" class="section hidden">
+            <div class="admin-container">
+                <h2>📝 题目管理</h2>
+                
+                <!-- 添加题目表单 -->
+                <div class="form-container">
+                    <h3>添加新题目</h3>
+                    <form id="question-form">
+                        <div class="form-group">
+                            <label>题目类型:</label>
+                            <select id="question-type" onchange="updateFormFields()">
+                                <option value="multiple">选择题</option>
+                                <option value="boolean">判断题</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>题目内容:</label>
+                            <textarea id="question-content" placeholder="请输入题目内容" required></textarea>
+                        </div>
+                        
+                        <div id="options-form" class="form-group">
+                            <label>选项 (每行一个，正确答案前加 * 号):</label>
+                            <textarea id="question-options" placeholder="例如:&#10;* 正确答案&#10;错误答案1&#10;错误答案2&#10;错误答案3" rows="6"></textarea>
+                        </div>
+                        
+                        <div id="boolean-form" class="form-group hidden">
+                            <label>正确答案:</label>
+                            <select id="boolean-answer">
+                                <option value="true">正确</option>
+                                <option value="false">错误</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="submit-btn">添加题目</button>
+                    </form>
+                </div>
+
+                <!-- 题目列表 -->
+                <div class="questions-list">
+                    <h3>当前题目列表</h3>
+                    <div id="questions-display"></div>
+                </div>
+
+                <!-- 图片管理 -->
+                <div class="images-container">
+                    <h3>奖励图片管理</h3>
+                    <div class="form-group">
+                        <label>图片URL:</label>
+                        <input type="text" id="image-url" placeholder="请输入图片URL">
+                        <button onclick="addRewardImage()" class="submit-btn">添加图片</button>
+                    </div>
+                    <div id="images-display" class="images-gallery"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 奖励图片展示 -->
+        <div id="rewards-section" class="section hidden">
+            <h2>🎁 你的奖励</h2>
+            <div id="rewards-gallery" class="rewards-gallery"></div>
+            <button onclick="backToResults()" class="back-btn">返回</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
