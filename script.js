@@ -893,12 +893,26 @@ const zl = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 let obstacles = [];
 
 function resizeGameCanvas() {
-  gameCanvas.width = gameCanvas.clientWidth;
-  gameCanvas.height = gameCanvas.clientHeight;
+  if (!gameCanvas) return;
+  const rect = gameCanvas.getBoundingClientRect();
+
+  // 如果读不到宽高，就给一个保底的尺寸
+  const width =
+    rect.width ||
+    (gameCanvas.parentElement ? gameCanvas.parentElement.clientWidth : 800) ||
+    800;
+  const height = rect.height || 260; // 默认高度 260px
+
+  gameCanvas.width = width;
+  gameCanvas.height = height;
   groundY = gameCanvas.height - 40;
 }
-resizeGameCanvas();
+
+// 等页面加载完再计算一次尺寸
+window.addEventListener("load", resizeGameCanvas);
+// 窗口尺寸变化时也重新适配
 window.addEventListener("resize", resizeGameCanvas);
+
 
 function resetGame() {
   gameRunning = false;
