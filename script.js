@@ -4,8 +4,8 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // ★★★ 把下面两行改成你自己的项目配置 ★★★
-const supabaseUrl = "https://YOUR-PROJECT.supabase.co"; // Project URL
-const supabaseAnonKey = "YOUR-ANON-PUBLIC-KEY"; // anon public key
+const supabaseUrl = "https://hhabcapddorjuhwxouwt.supabase.co"; // Project URL
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYWJjYXBkZG9yanVod3hvdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Njg5ODEsImV4cCI6MjA4MDM0NDk4MX0.THw4i3OrGFhSupDHWYvm-ySeZLEQ2Gk8H1AkguddzZI"; // anon public key
 // ★★★ 填好即可 ★★★
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -619,7 +619,7 @@ drawGame();
 // ======================================================
 // ⑤ 在一起的天数
 // ======================================================
-const startDate = new Date("2023-10-01"); // ★ 改成你们的在一起日期
+const startDate = new Date("2025-04-19"); // ★ 改成你们的在一起日期
 function updateDaysCounter() {
   const now = new Date();
   const diff = now - startDate;
