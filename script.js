@@ -82,7 +82,9 @@ function isValidImageUrl(url) {
         const trustedDomains = ['unsplash.com', 'images.unsplash.com', 'pexels.com', 'pixabay.com'];
         
         const hasValidExtension = validExtensions.some(ext => pathname.endsWith(ext));
-        const isTrustedDomain = trustedDomains.some(domain => parsedUrl.hostname.includes(domain));
+        const isTrustedDomain = trustedDomains.some(domain => 
+            parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain)
+        );
         
         return hasValidExtension || isTrustedDomain;
     } catch (e) {
@@ -232,8 +234,7 @@ function checkAnswer(answer) {
         score++;
         document.getElementById('score').textContent = score;
         
-        // 触发粒子效果
-        const rect = canvas.getBoundingClientRect();
+        // 触发粒子效果（中心位置）
         createParticles(window.innerWidth / 2, window.innerHeight / 2, 100);
         
         // 标记正确答案
