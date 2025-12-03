@@ -341,6 +341,97 @@ body {
   font-size: 14px;
 }
 
+.quiz-modes {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.quiz-mode-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #ffe5f0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+}
+
+.quiz-mode-btn:hover {
+  background: #ffd1e3;
+  box-shadow: 0 4px 12px rgba(255, 150, 180, 0.4);
+  transform: translateY(-1px);
+}
+
+.quiz-sets-block {
+  margin: 12px 0 20px;
+}
+
+.quiz-set-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quiz-set-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.quiz-set-play-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quiz-set-title {
+  font-weight: 600;
+}
+
+.quiz-set-meta {
+  font-size: 12px;
+  color: #777;
+}
+
+.quiz-set-delete-btn {
+  border: none;
+  background: #ffe0e0;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.quiz-current-set-tip {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #555;
+}
+
+.quiz-tip {
+  font-size: 13px;
+  color: #666;
+  margin: 10px 0;
+}
+
+.quiz-label input {
+  width: 100%;
+  max-width: 320px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+
 /* 爱心粒子 canvas */
 
 .heart-canvas {
