@@ -114,22 +114,58 @@
   </section>
 
   <!-- 默契挑战 -->
-  <section id="quiz" class="page">
-    <h2 class="section-title">情侣默契挑战 💞</h2>
-    <p class="section-subtitle">看看 LM 到底有多了解 Z.Z.L，或者反过来～</p>
+  <section class="page" id="quizPage">
+  <h2>情侣默契挑战 💌</h2>
 
-    <div class="quiz-box">
-      <div id="quizQuestion" class="quiz-question">点下面开始挑战吧！</div>
-      <div id="quizOptions" class="quiz-options"></div>
-      <div class="quiz-footer">
-        <button id="startQuizBtn" class="primary-btn">开始答题</button>
-        <div id="quizProgress" class="quiz-progress"></div>
-      </div>
-      <div id="quizResult" class="quiz-result"></div>
+  <div class="quiz-modes">
+    <button class="quiz-mode-btn" id="quizEditModeBtn">我来出题</button>
+    <button class="quiz-mode-btn" id="quizPlayModeBtn">开始答题</button>
+  </div>
+
+  <!-- 出题区域 -->
+  <div id="quizEditPanel" class="quiz-panel">
+    <p>每次添加一题：第一行写题目，后面每行一个选项，在正确选项前面加 <code>*</code>。</p>
+    <textarea id="quizEditInput" rows="6" placeholder="例如：
+我们第一次看电影是哪一天？
+*2024.05.20
+2024.05.21
+2024.05.01
+我忘了（不许选）"></textarea>
+    <button id="quizAddQuestionBtn">添加这道题</button>
+
+    <h3>当前题目（整套卷子）</h3>
+    <ul id="quizQuestionList"></ul>
+    <button id="quizClearAllBtn">清空全部题目（慎重）</button>
+  </div>
+
+  <!-- 答题区域 -->
+  <div id="quizPlayPanel" class="quiz-panel" style="display:none;">
+    <div id="quizContent">
+      <div id="quizProgress"></div>
+      <div id="quizQuestion"></div>
+      <div id="quizOptions"></div>
+      <div id="quizResult"></div>
+      <button id="startQuizBtn">开始答题</button>
     </div>
 
-    <canvas id="heartCanvas" class="heart-canvas"></canvas>
-  </section>
+    <div id="quizAfterPanel" style="display:none;">
+      <p id="quizFinalText"></p>
+      <input id="quizNameInput" placeholder="写下你的名字，比如 Z.Z.L / LM" />
+      <button id="quizSaveResultBtn">保存成绩到排行榜</button>
+    </div>
+
+    <h3>排行榜（最近的记录）</h3>
+    <table class="quiz-table">
+      <thead>
+        <tr>
+          <th>名字</th><th>得分</th><th>时间</th>
+        </tr>
+      </thead>
+      <tbody id="quizLeaderboard"></tbody>
+    </table>
+  </div>
+</section>
+
 
   <!-- 追逐小游戏 -->
   <section id="game" class="page">
