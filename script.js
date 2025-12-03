@@ -53,27 +53,32 @@ function renderDynamicMemories(list) {
   albumGrid.querySelectorAll(".memory-card.dynamic").forEach((el) => el.remove());
 
   list.forEach((m) => {
-    const card = document.createElement("div");
-    card.className = "memory-card dynamic";
-    card.innerHTML = `
-      <div class="memory-img-wrap">
-        <img src="${m.img_url}" alt="我们的回忆" />
-      </div>
-      <div class="memory-info">
-        <div class="memory-date">${m.taken_at || "某一天"}</div>
-        <div class="memory-text">${m.description || ""}</div>
-      </div>
-    `;
-    albumGrid.appendChild(card);
-  });
+  const card = document.createElement("div");
+  card.className = "memory-card dynamic";
+  card.dataset.id = m.id;
+  card.dataset.path = m.path || "";
+  card.innerHTML = `
+    <div class="memory-img-wrap">
+      <img src="${m.img_url}" alt="我们的回忆" />
+    </div>
+    <div class="memory-info">
+      <div class="memory-date">${m.taken_at || "某一天"}</div>
+      <div class="memory-text">${m.description || ""}</div>
+      <button class="memory-delete-btn">删除这条回忆</button>
+    </div>
+  `;
+  albumGrid.appendChild(card);
+});
+
 }
 
 // 从 Supabase 读取相册
 async function loadMemories() {
   const { data, error } = await supabase
-    .from(MEMORIES_TABLE)
-    .select("*")
-    .order("created_at", { ascending: true });
+  .from(MEMORIES_TABLE)
+  .select("id,img_url,taken_at,description,path")
+  .order("created_at", { ascending: true });
+
 
   if (error) {
     console.error("加载相册失败：", error);
@@ -81,6 +86,46 @@ async function loadMemories() {
   }
   renderDynamicMemories(data || []);
 }
+
+// 删除相册中的一条回忆（删除数据库记录 + 尝试删除存储文件）
+albumGrid.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".memory-delete-btn");
+  if (!btn) return;
+
+  const card = btn.closest(".memory-card");
+  const id = card.dataset.id;
+  const path = card.dataset.path;
+
+  if (!id) return;
+
+  if (!confirm("真的要删掉这条回忆吗？删了就回不来了哦～")) return;
+
+  // 1. 先删数据库记录
+  const { error: dbError } = await supabase
+    .from(MEMORIES_TABLE)
+    .delete()
+    .eq("id", id);
+
+  if (dbError) {
+    console.error(dbError);
+    alert("删除失败：" + dbError.message);
+    return;
+  }
+
+  // 2. 再尝试删 Storage 文件（path 可能为空，老数据就不动）
+  if (path) {
+    const { error: storageError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove([path]);
+    if (storageError) {
+      console.warn("删除存储文件失败，但数据库已删：", storageError);
+    }
+  }
+
+  // 3. 从页面移除
+  card.remove();
+});
+
 
 // 上传图片 + 写入数据库
 addMemoryBtn.addEventListener("click", async () => {
@@ -113,10 +158,12 @@ addMemoryBtn.addEventListener("click", async () => {
 
     // 3. 插入一条相册记录
     const { error: insertError } = await supabase.from(MEMORIES_TABLE).insert({
-      img_url: publicUrl,
-      taken_at: date,
-      description: text,
-    });
+  img_url: publicUrl,
+  path: filePath,        // ★ 新增：存储路径
+  taken_at: date,
+  description: text,
+});
+
 
     if (insertError) {
       console.error(insertError);
@@ -377,8 +424,6 @@ const gameCanvas = document.getElementById("gameCanvas");
 const gctx = gameCanvas.getContext("2d");
 const startGameBtn = document.getElementById("startGameBtn");
 const gameStatus = document.getElementById("gameStatus");
-const meHeadInput = document.getElementById("meHeadInput");
-const herHeadInput = document.getElementById("herHeadInput");
 
 let gameRunning = false;
 let lastTime = 0;
@@ -390,8 +435,12 @@ let gap;
 const ME_HEAD_KEY = "love_me_head";
 const HER_HEAD_KEY = "love_her_head";
 
-let meHeadImg = null;
-let herHeadImg = null;
+let meHeadImg = new Image();
+meHeadImg.src = "img/lm.png";   // ★ 你的大头照
+
+let herHeadImg = new Image();
+herHeadImg.src = "img/zzl.png"; // ★ 她的大头照
+
 
 function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.save();
