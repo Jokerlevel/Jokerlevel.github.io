@@ -850,9 +850,6 @@ addWishBtn.addEventListener("click", async () => {
 loadWishes();
 
 // ======================================================
-// ④ 追逐小游戏：沿用之前的逻辑（本地）
-// ======================================================
-// ======================================================
 // ④ 追逐小游戏
 // ======================================================
 const gameCanvas = document.getElementById("gameCanvas");
@@ -892,32 +889,34 @@ const lm = { x: 120, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 const zl = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 let obstacles = [];
 
+// ★★ 关键：确保一开始就给 canvas 一个正常尺寸，并算出 groundY
 function resizeGameCanvas() {
   if (!gameCanvas) return;
   const rect = gameCanvas.getBoundingClientRect();
 
-  // 如果读不到宽高，就给一个保底的尺寸
   const width =
     rect.width ||
     (gameCanvas.parentElement ? gameCanvas.parentElement.clientWidth : 800) ||
     800;
-  const height = rect.height || 260; // 默认高度 260px
+  const height = rect.height || 260;
 
   gameCanvas.width = width;
   gameCanvas.height = height;
   groundY = gameCanvas.height - 40;
 }
 
-// 等页面加载完再计算一次尺寸
-window.addEventListener("load", resizeGameCanvas);
+// 进页面就先算一次尺寸
+resizeGameCanvas();
 // 窗口尺寸变化时也重新适配
 window.addEventListener("resize", resizeGameCanvas);
 
-
 function resetGame() {
+  // 防止极端情况：每次重置前再算一次尺寸
+  resizeGameCanvas();
+
   gameRunning = false;
   lastTime = 0;
-  gap = 140;
+  gap = 500;
   lm.y = groundY - lm.height;
   zl.y = groundY - zl.height;
   lm.vy = zl.vy = 0;
@@ -994,7 +993,7 @@ function updateGame(dt) {
     }
   });
 
-  const chaseSpeed = 28;
+  const chaseSpeed = 10;
   gap -= chaseSpeed * dt;
   if (gap <= 40) {
     gameStatus.textContent = "LM 终于追到 Z.Z.L 啦，奖励一个大大大拥抱！🤍";
@@ -1077,6 +1076,7 @@ startGameBtn.addEventListener("click", () => {
   requestAnimationFrame(gameLoop);
 });
 
+// 初始静态画面
 drawGame();
 
 
