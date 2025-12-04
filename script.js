@@ -6,7 +6,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // ======================================================
 // 0. 网站密码锁
 // ======================================================
-const SITE_PASSWORD = "131413141314zzl";
+const SITE_PASSWORD = "13141314zzl";
 
 function setupPasswordGate() {
   const authed = localStorage.getItem("love_site_authed");
