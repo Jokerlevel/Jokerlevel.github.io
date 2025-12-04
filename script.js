@@ -1280,22 +1280,33 @@ drawGame();
   }
 
   // ---------- 流星 ----------
-  function spawnMeteor(text) {
-    const startY = Math.random() * wishCanvas.height * 0.6;
-    const length = 80 + Math.random() * 60;
-    const speed = 220 + Math.random() * 120;
-    const angle = (-Math.PI / 4) + (Math.random() - 0.5) * 0.2; // 大约 -45°
+  // 从底边飞上来的流星
+function spawnMeteor(text) {
+  // 随机从底边的某个位置起飞
+  const startX = Math.random() * wishCanvas.width;
+  const startY = wishCanvas.height + 40; // 画布下方一点点
 
-    meteors.push({
-      x: -40,
-      y: startY,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      len: length,
-      life: 1,
-      text,
-    });
-  }
+  const length = 80 + Math.random() * 60;
+  const speed = 220 + Math.random() * 120;
+
+  // 角度：大约是往上偏一点，带一点左右摆动
+  // -90° 是正上方，这里上下抖动一点（±30°）
+  const angle = (-Math.PI / 2) + (Math.random() - 0.5) * 0.6;
+
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed; // 这里一般是负数，往上飞
+
+  meteors.push({
+    x: startX,
+    y: startY,
+    vx,
+    vy,
+    len: length,
+    life: 1,
+    text,
+  });
+}
+
 
   function updateMeteors(dt) {
     meteors.forEach((m) => {
