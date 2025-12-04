@@ -576,26 +576,33 @@ body {
   padding: 16px;
 }
 
+/* 整体拉宽一点，左边星空更大，右边是心愿侧栏 */
 .wish-app {
+  max-width: 1120px; /* 整页宽一点 */
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(260px, 360px);
-  gap: 16px;
+  grid-template-columns: minmax(0, 2.2fr) minmax(260px, 360px);
+  gap: 20px;
   height: calc(100vh - 140px); /* 视情况改：减去导航高度 */
 }
 
 @media (max-width: 900px) {
   .wish-app {
+    max-width: 100%;
     grid-template-columns: 1fr;
     grid-template-rows: 2.2fr auto;
+    height: auto; /* 小屏就不要固定高度了，交给内容撑开 */
   }
 }
 
+/* 左边星空画布区域 */
 .wish-canvas-wrap {
   position: relative;
   border-radius: 22px;
   overflow: hidden;
   background: radial-gradient(circle at top, #ffe5ec 0%, #16161a 80%);
   box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+  min-height: 380px; /* 让星空看起来更大一点 */
 }
 
 #wishCanvas {
@@ -604,6 +611,7 @@ body {
   display: block;
 }
 
+/* 右侧心愿面板 */
 .wish-panel {
   border-radius: 22px;
   padding: 16px 18px;
@@ -627,6 +635,7 @@ body {
   opacity: .9;
 }
 
+/* 输入区域 */
 .wish-form {
   margin-top: 4px;
   display: flex;
@@ -654,6 +663,7 @@ body {
   color: rgba(255,255,255,0.7);
 }
 
+/* 按钮样式 */
 .wish-btn {
   border: none;
   border-radius: 999px;
@@ -674,6 +684,7 @@ body {
   border: 1px solid rgba(255,255,255,0.5);
 }
 
+/* 工具条：抽一条、清空、计数 */
 .wish-tools {
   display: flex;
   flex-wrap: wrap;
@@ -688,6 +699,29 @@ body {
   background: rgba(0,0,0,0.35);
 }
 
+/* 今日星愿卡片 */
+.today-card {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.today-title {
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .8;
+  margin-bottom: 4px;
+}
+
+#todayWishText {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* 心愿列表 */
 .wish-list {
   margin-top: 4px;
   flex: 1;
@@ -718,6 +752,7 @@ body {
   margin-top: 2px;
 }
 
+/* 没有心愿时的提示文字 */
 .wish-empty {
   font-size: 12px;
   opacity: .85;
