@@ -866,7 +866,7 @@ let gap;
 
 // 直接用本地图片当头像
 let meHeadImg = new Image();
-meHeadImg.src = "img/狸猫.png";   // 狸猫 的头像
+meHeadImg.src = "img/lm.png";   // 狸猫 的头像
 
 let herHeadImg = new Image();
 herHeadImg.src = "img/zzl.png"; // 小琳 的头像
@@ -886,7 +886,7 @@ function drawDefaultHead(ctx2, x, y, r, label) {
 }
 
 const 狸猫 = { x: 120, y: 0, vy: 0, width: 40, height: 60, onGround: false };
-const zl = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
+const 小琳 = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 let obstacles = [];
 
 // ★★ 关键：确保一开始就给 canvas 一个正常尺寸，并算出 groundY
