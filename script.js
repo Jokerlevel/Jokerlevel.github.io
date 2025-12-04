@@ -799,6 +799,92 @@ function drawHearts() {
   }
 }
 
+// ======================================================
+// ③ 愿望清单：Supabase wishes 表
+// ======================================================
+const todoListEl = document.getElementById("todoList");
+const newWishInput = document.getElementById("newWishInput");
+const addWishBtn = document.getElementById("addWishBtn");
+const WISHES_TABLE = "wishes";
+
+let wishes = [];
+
+function renderWishes() {
+  if (!todoListEl) return;
+  todoListEl.innerHTML = "";
+  wishes.forEach((w) => {
+    const li = document.createElement("li");
+    li.className = "todo-item";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = !!w.done;
+    checkbox.addEventListener("change", async () => {
+      const { error } = await supabase
+        .from(WISHES_TABLE)
+        .update({ done: checkbox.checked })
+        .eq("id", w.id);
+      if (error) {
+        console.error(error);
+        // 回滚勾选状态
+        checkbox.checked = !checkbox.checked;
+      } else {
+        w.done = checkbox.checked;
+      }
+    });
+
+    const span = document.createElement("span");
+    span.textContent = w.text;
+    if (w.done) span.classList.add("done");
+
+    li.appendChild(checkbox);
+    li.appendChild(span);
+    todoListEl.appendChild(li);
+  });
+}
+
+async function loadWishes() {
+  if (!todoListEl) return; // 页面上没有愿望区域就直接返回
+  const { data, error } = await supabase
+    .from(WISHES_TABLE)
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("加载愿望清单失败：", error);
+    return;
+  }
+  wishes = data || [];
+  renderWishes();
+}
+
+// 绑定“添加愿望”按钮
+if (addWishBtn) {
+  addWishBtn.addEventListener("click", async () => {
+    const text = (newWishInput?.value || "").trim();
+    if (!text) {
+      alert("先写下一个小愿望吧～");
+      return;
+    }
+    const { data, error } = await supabase
+      .from(WISHES_TABLE)
+      .insert({ text, done: false })
+      .select()
+      .single();
+
+    if (error) {
+      console.error(error);
+      alert("添加愿望失败～");
+      return;
+    }
+    if (newWishInput) newWishInput.value = "";
+    wishes.push(data);
+    renderWishes();
+  });
+}
+
+// 初次加载愿望清单
+loadWishes();
 
 // ======================================================
 // ④ 追逐小游戏
