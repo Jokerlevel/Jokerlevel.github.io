@@ -720,19 +720,26 @@ quizPlayModeBtn.click();
 // 爱心粒子（用于答题、小游戏通用）
 // ======================================================
 const canvas = document.getElementById("heartCanvas");
-const ctx = canvas.getContext("2d");
+let ctx = null;
 let hearts = [];
 let heartTimer = null;
 
 function resizeCanvas() {
+  if (!canvas) return;
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 }
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+
+// 如果页面上真的有 heartCanvas 才初始化相关逻辑
+if (canvas) {
+  ctx = canvas.getContext("2d");
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+}
 
 // 从中间爆出爱心（答题用）
 function triggerHearts() {
+  if (!canvas || !ctx) return;  // 没有这个 canvas 就直接忽略
   hearts = [];
   for (let i = 0; i < 40; i++) {
     hearts.push({
@@ -749,13 +756,14 @@ function triggerHearts() {
 
 // 从底部冒出很多爱心（追到之后用）
 function triggerBottomHearts() {
+  if (!canvas || !ctx) return;
   hearts = [];
   for (let i = 0; i < 80; i++) {
     hearts.push({
       x: Math.random() * canvas.width,
       y: canvas.height + Math.random() * 40,
       vx: (Math.random() - 0.5) * 2,
-      vy: -(2 + Math.random() * 2), // 先向上飞
+      vy: -(2 + Math.random() * 2),
       size: 10 + Math.random() * 8,
       life: 1,
     });
@@ -764,11 +772,12 @@ function triggerBottomHearts() {
 }
 
 function drawHearts() {
+  if (!canvas || !ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   hearts.forEach((h) => {
     h.x += h.vx;
     h.y += h.vy;
-    h.vy += 0.08; // 有一点“重力”，会先上升再慢慢落下
+    h.vy += 0.08;
     h.life -= 0.01;
     if (h.life <= 0) return;
     ctx.save();
@@ -790,11 +799,16 @@ function drawHearts() {
   }
 }
 
+
 // ======================================================
 // ④ 追逐小游戏
 // ======================================================
 const gameCanvas = document.getElementById("gameCanvas");
-const gctx = gameCanvas.getContext("2d");
+let gctx = null;
+if (gameCanvas) {
+  gctx = gameCanvas.getContext("2d");
+}
+
 const startGameBtn = document.getElementById("startGameBtn");
 const gameStatus = document.getElementById("gameStatus");
 
@@ -1037,6 +1051,7 @@ function drawCharacter(ch, color, headImg, label, angleRad = 0) {
 }
 
 function drawGame() {
+  if (!gameCanvas || !gctx) return;
   gctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
   // 地面
