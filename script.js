@@ -1230,10 +1230,14 @@ drawGame();
 //    对应 <section id="wishPage"> 区域
 // ======================================================
 (function () {
-  const canvas = document.getElementById("wishCanvas");
-  if (!canvas) return; // 页面上没有这个区域就直接跳过
+  // 为了避免和前面 heartCanvas 混淆，这里用 wishCanvas / wishCtx
+  const wishCanvas = document.getElementById("wishCanvas");
+  if (!wishCanvas) {
+    console.warn("找不到 #wishCanvas，星愿小宇宙模块跳过初始化");
+    return; // 页面上没有这个区域就直接跳过
+  }
 
-  const ctx = canvas.getContext("2d");
+  const wishCtx = wishCanvas.getContext("2d");
 
   let stars = [];
   let meteors = [];
@@ -1241,9 +1245,9 @@ drawGame();
 
   // ---------- 画布尺寸 ----------
   function resizeWishCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width || 600;
-    canvas.height = rect.height || 360;
+    const rect = wishCanvas.getBoundingClientRect();
+    wishCanvas.width = rect.width || 600;
+    wishCanvas.height = rect.height || 360;
   }
   window.addEventListener("resize", resizeWishCanvas);
   resizeWishCanvas();
@@ -1254,8 +1258,8 @@ drawGame();
     const count = 80;
     for (let i = 0; i < count; i++) {
       stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
+        x: Math.random() * wishCanvas.width,
+        y: Math.random() * wishCanvas.height,
         r: 0.6 + Math.random() * 1.2,
         phase: Math.random() * Math.PI * 2,
         speed: 0.5 + Math.random() * 0.8,
@@ -1268,16 +1272,16 @@ drawGame();
     stars.forEach((s) => {
       s.phase += dt * s.speed;
       const alpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.phase));
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.fill();
+      wishCtx.beginPath();
+      wishCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      wishCtx.fillStyle = `rgba(255,255,255,${alpha})`;
+      wishCtx.fill();
     });
   }
 
   // ---------- 流星 ----------
   function spawnMeteor(text) {
-    const startY = Math.random() * canvas.height * 0.6;
+    const startY = Math.random() * wishCanvas.height * 0.6;
     const length = 80 + Math.random() * 60;
     const speed = 220 + Math.random() * 120;
     const angle = (-Math.PI / 4) + (Math.random() - 0.5) * 0.2; // 大约 -45°
@@ -1300,61 +1304,62 @@ drawGame();
       m.life -= dt * 0.55;
     });
     meteors = meteors.filter(
-      (m) => m.life > 0 && m.x < canvas.width + 200 && m.y < canvas.height + 200
+      (m) => m.life > 0 && m.x < wishCanvas.width + 200 && m.y < wishCanvas.height + 200
     );
   }
 
   function drawMeteor(m) {
-    const tailEndX = m.x - (m.vx / Math.hypot(m.vx, m.vy)) * m.len;
-    const tailEndY = m.y - (m.vy / Math.hypot(m.vx, m.vy)) * m.len;
+    const speedNorm = Math.hypot(m.vx, m.vy) || 1;
+    const tailEndX = m.x - (m.vx / speedNorm) * m.len;
+    const tailEndY = m.y - (m.vy / speedNorm) * m.len;
 
-    const grad = ctx.createLinearGradient(m.x, m.y, tailEndX, tailEndY);
+    const grad = wishCtx.createLinearGradient(m.x, m.y, tailEndX, tailEndY);
     grad.addColorStop(0, `rgba(255,255,255,${0.9 * m.life})`);
     grad.addColorStop(1, `rgba(255,170,210,0)`);
 
-    ctx.lineWidth = 2.4;
-    ctx.strokeStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(tailEndX, tailEndY);
-    ctx.lineTo(m.x, m.y);
-    ctx.stroke();
+    wishCtx.lineWidth = 2.4;
+    wishCtx.strokeStyle = grad;
+    wishCtx.beginPath();
+    wishCtx.moveTo(tailEndX, tailEndY);
+    wishCtx.lineTo(m.x, m.y);
+    wishCtx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, 3.3, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,245,250,${m.life})`;
-    ctx.fill();
+    wishCtx.beginPath();
+    wishCtx.arc(m.x, m.y, 3.3, 0, Math.PI * 2);
+    wishCtx.fillStyle = `rgba(255,245,250,${m.life})`;
+    wishCtx.fill();
 
     // ★★★ 可爱大字：这里是你要的“字体变大 + 可爱”部分 ★★★
     if (m.text) {
-      const baseSize = 18;                         // 基础字号
-      const extra = 8 * Math.max(0, m.life);       // 生命值越高越大
+      const baseSize = 18;
+      const extra = 8 * Math.max(0, m.life);
       const fontSize = baseSize + extra;
 
-      ctx.font = `${fontSize}px "Comic Sans MS", "Baloo 2", "Noto Sans SC", system-ui`;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "bottom";
+      wishCtx.font = `${fontSize}px "Comic Sans MS", "Baloo 2", "Noto Sans SC", system-ui`;
+      wishCtx.textAlign = "left";
+      wishCtx.textBaseline = "bottom";
 
-      ctx.shadowColor = "rgba(0,0,0,0.7)";
-      ctx.shadowBlur = 8;
-      ctx.lineWidth = 2;
+      wishCtx.shadowColor = "rgba(0,0,0,0.7)";
+      wishCtx.shadowBlur = 8;
+      wishCtx.lineWidth = 2;
 
-      ctx.strokeStyle = "rgba(0,0,0,0.65)";
-      ctx.strokeText(m.text, m.x + 10, m.y - 8);
+      wishCtx.strokeStyle = "rgba(0,0,0,0.65)";
+      wishCtx.strokeText(m.text, m.x + 10, m.y - 8);
 
-      ctx.fillStyle = `rgba(255,245,250,${Math.max(0.3, m.life)})`;
-      ctx.fillText(m.text, m.x + 10, m.y - 8);
+      wishCtx.fillStyle = `rgba(255,245,250,${Math.max(0.3, m.life)})`;
+      wishCtx.fillText(m.text, m.x + 10, m.y - 8);
 
-      ctx.shadowBlur = 0;
+      wishCtx.shadowBlur = 0;
     }
   }
 
   // ---------- 动画主循环 ----------
   function drawBackground() {
-    const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    const grd = wishCtx.createLinearGradient(0, 0, wishCanvas.width, wishCanvas.height);
     grd.addColorStop(0, "#0b1020");
     grd.addColorStop(1, "#1b1028");
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    wishCtx.fillStyle = grd;
+    wishCtx.fillRect(0, 0, wishCanvas.width, wishCanvas.height);
   }
 
   function loop(timestamp) {
@@ -1475,6 +1480,8 @@ drawGame();
       wishInput.value = "";
       wishInput.focus();
     });
+  } else {
+    console.warn("找不到 #wishBtn 按钮，无法绑定许愿事件");
   }
 
   if (wishInput) {
@@ -1518,11 +1525,11 @@ drawGame();
   const wishPageNavBtn = document.querySelector('.nav-btn[data-target="wishPage"]');
   if (wishPageNavBtn) {
     wishPageNavBtn.addEventListener("click", () => {
-      // 每次打开，多放几颗流星
       wishData.slice(-3).forEach((w) => spawnMeteor(w.text));
     });
   }
 })();  // ★ 自执行模块结束
+
 
 
 
