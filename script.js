@@ -815,7 +815,7 @@ herHeadImg.src = "img/zzl.png"; // 小琳 的头像
 
 // 抱抱合照
 let hugImg = new Image();
-hugImg.src = "img/hug.png";
+hugImg.src = "img/hug.jpg";
 
 function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.save();
