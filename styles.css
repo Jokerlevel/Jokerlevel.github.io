@@ -570,3 +570,156 @@ body {
     justify-content: flex-end;
   }
 }
+
+/* 心愿小宇宙布局 */
+#wishPage {
+  padding: 16px;
+}
+
+.wish-app {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(260px, 360px);
+  gap: 16px;
+  height: calc(100vh - 140px); /* 视情况改：减去导航高度 */
+}
+
+@media (max-width: 900px) {
+  .wish-app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 2.2fr auto;
+  }
+}
+
+.wish-canvas-wrap {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  background: radial-gradient(circle at top, #ffe5ec 0%, #16161a 80%);
+  box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+}
+
+#wishCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.wish-panel {
+  border-radius: 22px;
+  padding: 16px 18px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wish-header h2 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.wish-header p {
+  font-size: 13px;
+  opacity: .9;
+}
+
+.wish-form {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wish-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.wish-input-row input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: none;
+  outline: none;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-size: 14px;
+}
+
+.wish-input-row input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+.wish-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: linear-gradient(135deg,#ff7b9c,#ffcc70);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+}
+
+.wish-btn.secondary {
+  background: rgba(0,0,0,0.4);
+  box-shadow: none;
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+.wish-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.wish-chip {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.35);
+}
+
+.wish-list {
+  margin-top: 4px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wish-item {
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  gap: 6px;
+}
+
+.wish-item .idx {
+  min-width: 20px;
+  opacity: .7;
+}
+
+.wish-time {
+  font-size: 10px;
+  opacity: .7;
+  margin-top: 2px;
+}
+
+.wish-empty {
+  font-size: 12px;
+  opacity: .85;
+}
+
