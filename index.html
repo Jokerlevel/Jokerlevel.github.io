@@ -14,6 +14,7 @@
       <button class="nav-btn" data-target="album">回忆相册</button>
       <button class="nav-btn" data-target="quizPage">默契挑战</button>
       <button class="nav-btn" data-target="game">追逐小游戏</button>
+      <button class="nav-btn" data-target="wishPage">心愿小宇宙</button>
       <button class="nav-btn" data-target="future">愿望清单</button>
     </nav>
   </header>
@@ -205,6 +206,43 @@
       <div id="gameStatus" class="game-msg"></div>
     </div>
   </section>
+
+  <section id="wishPage" class="page">
+  <div class="wish-app">
+    <div class="wish-canvas-wrap">
+      <canvas id="wishCanvas"></canvas>
+    </div>
+
+    <aside class="wish-panel">
+      <div class="wish-header">
+        <h2>星愿小宇宙 ✨</h2>
+        <p>写下你的心愿，它会变成一颗小小的流星飞过夜空。</p>
+      </div>
+
+      <div class="wish-form">
+        <div class="wish-input-row">
+          <input id="wishInput" type="text" maxlength="60"
+                 placeholder="比如：希望小琳每天都开开心心 ✨" />
+          <button class="wish-btn" id="wishBtn">许愿</button>
+        </div>
+        <div class="wish-tools">
+          <button class="wish-btn secondary" id="randomBtn">抽一条今日星愿</button>
+          <button class="wish-btn secondary" id="clearBtn">清空</button>
+          <span class="wish-chip">共 <span id="wishCount">0</span> 条星愿</span>
+        </div>
+      </div>
+
+      <div class="today-card" id="todayCard" style="display:none;">
+        <div class="today-title">TODAY'S WISH</div>
+        <div id="todayWishText"></div>
+      </div>
+
+      <div class="wish-list" id="wishList"></div>
+      <div class="wish-empty" id="wishEmpty">还没有星愿，先许一个试试吧～</div>
+    </aside>
+  </div>
+</section>
+
 
   <!-- 愿望清单 -->
   <section id="future" class="page">
