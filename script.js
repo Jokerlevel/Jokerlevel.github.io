@@ -1225,6 +1225,305 @@ startGameBtn.addEventListener("click", () => {
 // 初始静态画面
 drawGame();
 
+// ======================================================
+// ④ 星愿小宇宙：流星 + 心愿列表（本地存储）
+//    对应 <section id="wishPage"> 区域
+// ======================================================
+(function () {
+  const canvas = document.getElementById("wishCanvas");
+  if (!canvas) return; // 页面上没有这个区域就直接跳过
+
+  const ctx = canvas.getContext("2d");
+
+  let stars = [];
+  let meteors = [];
+  let lastTime = 0;
+
+  // ---------- 画布尺寸 ----------
+  function resizeWishCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width || 600;
+    canvas.height = rect.height || 360;
+  }
+  window.addEventListener("resize", resizeWishCanvas);
+  resizeWishCanvas();
+
+  // ---------- 背景星星 ----------
+  function initStars() {
+    stars = [];
+    const count = 80;
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 0.6 + Math.random() * 1.2,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 0.8,
+      });
+    }
+  }
+  initStars();
+
+  function drawStars(dt) {
+    stars.forEach((s) => {
+      s.phase += dt * s.speed;
+      const alpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fill();
+    });
+  }
+
+  // ---------- 流星 ----------
+  function spawnMeteor(text) {
+    const startY = Math.random() * canvas.height * 0.6;
+    const length = 80 + Math.random() * 60;
+    const speed = 220 + Math.random() * 120;
+    const angle = (-Math.PI / 4) + (Math.random() - 0.5) * 0.2; // 大约 -45°
+
+    meteors.push({
+      x: -40,
+      y: startY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      len: length,
+      life: 1,
+      text,
+    });
+  }
+
+  function updateMeteors(dt) {
+    meteors.forEach((m) => {
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      m.life -= dt * 0.55;
+    });
+    meteors = meteors.filter(
+      (m) => m.life > 0 && m.x < canvas.width + 200 && m.y < canvas.height + 200
+    );
+  }
+
+  function drawMeteor(m) {
+    const tailEndX = m.x - (m.vx / Math.hypot(m.vx, m.vy)) * m.len;
+    const tailEndY = m.y - (m.vy / Math.hypot(m.vx, m.vy)) * m.len;
+
+    const grad = ctx.createLinearGradient(m.x, m.y, tailEndX, tailEndY);
+    grad.addColorStop(0, `rgba(255,255,255,${0.9 * m.life})`);
+    grad.addColorStop(1, `rgba(255,170,210,0)`);
+
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(tailEndX, tailEndY);
+    ctx.lineTo(m.x, m.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, 3.3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,245,250,${m.life})`;
+    ctx.fill();
+
+    // ★★★ 可爱大字：这里是你要的“字体变大 + 可爱”部分 ★★★
+    if (m.text) {
+      const baseSize = 18;                         // 基础字号
+      const extra = 8 * Math.max(0, m.life);       // 生命值越高越大
+      const fontSize = baseSize + extra;
+
+      ctx.font = `${fontSize}px "Comic Sans MS", "Baloo 2", "Noto Sans SC", system-ui`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+
+      ctx.shadowColor = "rgba(0,0,0,0.7)";
+      ctx.shadowBlur = 8;
+      ctx.lineWidth = 2;
+
+      ctx.strokeStyle = "rgba(0,0,0,0.65)";
+      ctx.strokeText(m.text, m.x + 10, m.y - 8);
+
+      ctx.fillStyle = `rgba(255,245,250,${Math.max(0.3, m.life)})`;
+      ctx.fillText(m.text, m.x + 10, m.y - 8);
+
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // ---------- 动画主循环 ----------
+  function drawBackground() {
+    const grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grd.addColorStop(0, "#0b1020");
+    grd.addColorStop(1, "#1b1028");
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function loop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    drawBackground();
+    drawStars(dt);
+    updateMeteors(dt);
+    meteors.forEach(drawMeteor);
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ======================================================
+  // DOM：心愿输入 + 列表（本地存储）
+  // ======================================================
+  const wishInput = document.getElementById("wishInput");
+  const wishBtn = document.getElementById("wishBtn");
+  const randomBtn = document.getElementById("randomBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const wishListEl = document.getElementById("wishList");
+  const wishCountEl = document.getElementById("wishCount");
+  const todayCard = document.getElementById("todayCard");
+  const todayWishText = document.getElementById("todayWishText");
+  const wishEmpty = document.getElementById("wishEmpty");
+
+  const STORAGE_KEY = "love_site_wishes_v1";
+  let wishData = [];
+
+  function loadWishData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        wishData = [];
+      } else {
+        wishData = JSON.parse(raw);
+      }
+    } catch (e) {
+      console.error("读取本地星愿失败", e);
+      wishData = [];
+    }
+  }
+
+  function saveWishData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(wishData));
+    } catch (e) {
+      console.error("保存本地星愿失败", e);
+    }
+  }
+
+  function renderWishList() {
+    if (!wishListEl) return;
+    wishListEl.innerHTML = "";
+
+    if (!wishData.length) {
+      if (wishEmpty) wishEmpty.style.display = "block";
+    } else {
+      if (wishEmpty) wishEmpty.style.display = "none";
+    }
+
+    if (wishCountEl) wishCountEl.textContent = wishData.length.toString();
+
+    wishData.forEach((w, idx) => {
+      const item = document.createElement("div");
+      item.className = "wish-item";
+
+      const idxSpan = document.createElement("span");
+      idxSpan.className = "idx";
+      idxSpan.textContent = `${idx + 1}.`;
+
+      const main = document.createElement("div");
+      main.className = "text-block";
+      const text = document.createElement("div");
+      text.textContent = w.text;
+
+      const time = document.createElement("div");
+      time.className = "wish-time";
+      const d = new Date(w.createdAt);
+      time.textContent = d.toLocaleString();
+
+      main.appendChild(text);
+      main.appendChild(time);
+
+      item.appendChild(idxSpan);
+      item.appendChild(main);
+      wishListEl.appendChild(item);
+    });
+  }
+
+  function addWish(text) {
+    const now = new Date().toISOString();
+    const w = { text, createdAt: now };
+    wishData.push(w);
+    saveWishData();
+    renderWishList();
+    spawnMeteor(text); // 新心愿 = 一颗新的流星
+  }
+
+  function pickRandomWish() {
+    if (!wishData.length) return null;
+    const i = Math.floor(Math.random() * wishData.length);
+    return wishData[i];
+  }
+
+  // ---------- 事件绑定 ----------
+  if (wishBtn) {
+    wishBtn.addEventListener("click", () => {
+      const text = (wishInput?.value || "").trim();
+      if (!text) {
+        alert("先写下一个小小的星愿吧～");
+        return;
+      }
+      addWish(text);
+      wishInput.value = "";
+      wishInput.focus();
+    });
+  }
+
+  if (wishInput) {
+    wishInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        wishBtn?.click();
+      }
+    });
+  }
+
+  if (randomBtn) {
+    randomBtn.addEventListener("click", () => {
+      const w = pickRandomWish();
+      if (!w) {
+        alert("还没有星愿呢，先写一个吧～");
+        return;
+      }
+      if (todayCard && todayWishText) {
+        todayCard.style.display = "block";
+        todayWishText.textContent = w.text;
+      }
+      spawnMeteor(w.text);
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      if (!confirm("确定要清空所有星愿吗？（只是本地记录，不会删掉你心里的愿望~）")) return;
+      wishData = [];
+      saveWishData();
+      renderWishList();
+      if (todayCard) todayCard.style.display = "none";
+    });
+  }
+
+  // ---------- 初始化：加载本地星愿 ----------
+  loadWishData();
+  renderWishList();
+
+  // 进入“心愿小宇宙”页面时，自动让几条旧心愿变成流星
+  const wishPageNavBtn = document.querySelector('.nav-btn[data-target="wishPage"]');
+  if (wishPageNavBtn) {
+    wishPageNavBtn.addEventListener("click", () => {
+      // 每次打开，多放几颗流星
+      wishData.slice(-3).forEach((w) => spawnMeteor(w.text));
+    });
+  }
+})();  // ★ 自执行模块结束
+
 
 
 // ======================================================
