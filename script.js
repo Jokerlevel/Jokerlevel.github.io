@@ -35,9 +35,9 @@ function setupPasswordGate() {
       box-shadow:0 10px 30px rgba(0,0,0,0.2);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text';
     ">
-      <h2 style="margin-bottom:12px;">Hi Z.Z.L 💗</h2>
+      <h2 style="margin-bottom:12px;">Hi 小琳 💗</h2>
       <p style="font-size:14px; color:#555; margin-bottom:16px;">
-        这是 LM 悄悄给你做的小网站，先输入我们的暗号再进去吧～
+        这是 狸猫 悄悄给你做的小网站，先输入我们的暗号再进去吧～
       </p>
       <input id="pwInput" type="password" placeholder="输入密码"
         style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid #ddd; margin-bottom:12px;">
@@ -866,10 +866,10 @@ let gap;
 
 // 直接用本地图片当头像
 let meHeadImg = new Image();
-meHeadImg.src = "img/lm.png";   // LM 的头像
+meHeadImg.src = "img/狸猫.png";   // 狸猫 的头像
 
 let herHeadImg = new Image();
-herHeadImg.src = "img/zzl.png"; // Z.Z.L 的头像
+herHeadImg.src = "img/zzl.png"; // 小琳 的头像
 
 function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.save();
@@ -885,7 +885,7 @@ function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.restore();
 }
 
-const lm = { x: 120, y: 0, vy: 0, width: 40, height: 60, onGround: false };
+const 狸猫 = { x: 120, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 const zl = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 let obstacles = [];
 
@@ -917,10 +917,10 @@ function resetGame() {
   gameRunning = false;
   lastTime = 0;
   gap = 500;
-  lm.y = groundY - lm.height;
+  狸猫.y = groundY - 狸猫.height;
   zl.y = groundY - zl.height;
-  lm.vy = zl.vy = 0;
-  lm.onGround = zl.onGround = true;
+  狸猫.vy = zl.vy = 0;
+  狸猫.onGround = zl.onGround = true;
   obstacles = [];
   gameStatus.textContent = "准备好了就点“开始游戏”，按空格一起跳跃～";
 }
@@ -934,7 +934,7 @@ function spawnObstacle() {
     y: groundY - height,
     width,
     height,
-    hitLM: false,
+    hit狸猫: false,
   });
 }
 
@@ -943,9 +943,9 @@ let obstacleTimer = 0;
 const obstacleInterval = 1400;
 
 function jump() {
-  if (lm.onGround) {
-    lm.vy = -340;
-    lm.onGround = false;
+  if (狸猫.onGround) {
+    狸猫.vy = -340;
+    狸猫.onGround = false;
   }
   if (zl.onGround) {
     zl.vy = -340;
@@ -971,7 +971,7 @@ gameCanvas.addEventListener("mousedown", () => {
 
 function updateGame(dt) {
   const g = 900;
-  [lm, zl].forEach((ch) => {
+  [狸猫, zl].forEach((ch) => {
     ch.vy += g * dt;
     ch.y += ch.vy * dt;
     if (ch.y + ch.height >= groundY) {
@@ -993,12 +993,12 @@ function updateGame(dt) {
   }
 
   obstacles.forEach((ob) => {
-    if (!ob.hitLM && ob.x < lm.x + lm.width && ob.x + ob.width > lm.x) {
-      const lmBottom = lm.y + lm.height;
-      if (lmBottom > ob.y + 4) {
-        ob.hitLM = true;
+    if (!ob.hit狸猫 && ob.x < 狸猫.x + 狸猫.width && ob.x + ob.width > 狸猫.x) {
+      const 狸猫Bottom = 狸猫.y + 狸猫.height;
+      if (狸猫Bottom > ob.y + 4) {
+        ob.hit狸猫 = true;
         gap += 80;
-        gameStatus.textContent = "LM 被障碍绊了一下，又离 Z.Z.L 远了一点 😭";
+        gameStatus.textContent = "狸猫 被障碍绊了一下，又离 小琳 远了一点 😭";
       }
     }
   });
@@ -1006,7 +1006,7 @@ function updateGame(dt) {
   const chaseSpeed = 20;
   gap -= chaseSpeed * dt;
   if (gap <= 10) {
-    gameStatus.textContent = "LM 终于追到 Z.Z.L 啦，奖励一个大大大拥抱！🤍";
+    gameStatus.textContent = "狸猫 终于追到 小琳 啦，奖励一个大大大拥抱！🤍";
     gameRunning = false;
   }
 }
@@ -1046,7 +1046,7 @@ function drawCharacter(ch, color, headImg, label) {
 
   gctx.restore();
 
-  // 头像（用图片裁成圆，不存在时用默认 LM / ZL）
+  // 头像（用图片裁成圆，不存在时用默认 狸猫 / ZL）
   const headRadius = 18;
   const headX = cx;
   const headY = torsoTop - headRadius + 4;
@@ -1091,13 +1091,13 @@ function drawGame() {
   const baseGapPx = 80;                            // 最小像素间距
   const extraGapPx = 220;                          // 还能在画布上拉开的最大距离
 
-  // LM 固定在画布左 1/5 处
-  lm.x = gameCanvas.width * 0.2;
-  // Z.Z.L 的 x 随 gap 变化
-  zl.x = lm.x + baseGapPx + extraGapPx * distRatio;
+  // 狸猫 固定在画布左 1/5 处
+  狸猫.x = gameCanvas.width * 0.2;
+  // 小琳 的 x 随 gap 变化
+  zl.x = 狸猫.x + baseGapPx + extraGapPx * distRatio;
 
   // 画两个人
-  drawCharacter(lm, "#ff7b9c", meHeadImg, "LM");
+  drawCharacter(狸猫, "#ff7b9c", meHeadImg, "狸猫");
   drawCharacter(zl, "#ff9bb3", herHeadImg, "ZL");
 
   // 顶部进度条：gap 越小，追上进度越高
@@ -1131,7 +1131,7 @@ function gameLoop(timestamp) {
 startGameBtn.addEventListener("click", () => {
   resetGame();
   gameRunning = true;
-  gameStatus.textContent = "游戏开始！按空格跳跃，不要让 LM 被绊倒～";
+  gameStatus.textContent = "游戏开始！按空格跳跃，不要让 狸猫 被绊倒～";
   lastTime = 0;
   requestAnimationFrame(gameLoop);
 });
