@@ -716,7 +716,9 @@ loadQuizSets();
 quizPlayModeBtn.click();
 
 
-// 爱心粒子
+// ======================================================
+// 爱心粒子（用于答题、小游戏通用）
+// ======================================================
 const canvas = document.getElementById("heartCanvas");
 const ctx = canvas.getContext("2d");
 let hearts = [];
@@ -729,6 +731,7 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
+// 从中间爆出爱心（答题用）
 function triggerHearts() {
   hearts = [];
   for (let i = 0; i < 40; i++) {
@@ -744,12 +747,28 @@ function triggerHearts() {
   if (!heartTimer) heartTimer = requestAnimationFrame(drawHearts);
 }
 
+// 从底部冒出很多爱心（追到之后用）
+function triggerBottomHearts() {
+  hearts = [];
+  for (let i = 0; i < 80; i++) {
+    hearts.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height + Math.random() * 40,
+      vx: (Math.random() - 0.5) * 2,
+      vy: -(2 + Math.random() * 2), // 先向上飞
+      size: 10 + Math.random() * 8,
+      life: 1,
+    });
+  }
+  if (!heartTimer) heartTimer = requestAnimationFrame(drawHearts);
+}
+
 function drawHearts() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   hearts.forEach((h) => {
     h.x += h.vx;
     h.y += h.vy;
-    h.vy += 0.08;
+    h.vy += 0.08; // 有一点“重力”，会先上升再慢慢落下
     h.life -= 0.01;
     if (h.life <= 0) return;
     ctx.save();
@@ -772,84 +791,6 @@ function drawHearts() {
 }
 
 // ======================================================
-// ③ 愿望清单：Supabase wishes 表
-// ======================================================
-const todoListEl = document.getElementById("todoList");
-const newWishInput = document.getElementById("newWishInput");
-const addWishBtn = document.getElementById("addWishBtn");
-const WISHES_TABLE = "wishes";
-
-let wishes = [];
-
-function renderWishes() {
-  todoListEl.innerHTML = "";
-  wishes.forEach((w) => {
-    const li = document.createElement("li");
-    li.className = "todo-item";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = !!w.done;
-    checkbox.addEventListener("change", async () => {
-      const { error } = await supabase
-        .from(WISHES_TABLE)
-        .update({ done: checkbox.checked })
-        .eq("id", w.id);
-      if (error) console.error(error);
-      else w.done = checkbox.checked;
-      renderWishes();
-    });
-
-    const span = document.createElement("span");
-    span.textContent = w.text;
-    if (w.done) span.classList.add("done");
-
-    li.appendChild(checkbox);
-    li.appendChild(span);
-    todoListEl.appendChild(li);
-  });
-}
-
-async function loadWishes() {
-  const { data, error } = await supabase
-    .from(WISHES_TABLE)
-    .select("*")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("加载愿望清单失败：", error);
-    return;
-  }
-  wishes = data || [];
-  renderWishes();
-}
-
-addWishBtn.addEventListener("click", async () => {
-  const text = newWishInput.value.trim();
-  if (!text) {
-    alert("先写下一个小愿望吧～");
-    return;
-  }
-  const { data, error } = await supabase
-    .from(WISHES_TABLE)
-    .insert({ text, done: false })
-    .select()
-    .single();
-
-  if (error) {
-    console.error(error);
-    alert("添加愿望失败～");
-    return;
-  }
-  newWishInput.value = "";
-  wishes.push(data);
-  renderWishes();
-});
-
-// 初次加载愿望清单
-loadWishes();
-
-// ======================================================
 // ④ 追逐小游戏
 // ======================================================
 const gameCanvas = document.getElementById("gameCanvas");
@@ -858,18 +799,23 @@ const startGameBtn = document.getElementById("startGameBtn");
 const gameStatus = document.getElementById("gameStatus");
 
 let gameRunning = false;
+let gameFinished = false;
 let lastTime = 0;
 
 let groundY;
 let worldSpeed = 140;
 let gap;
 
-// 直接用本地图片当头像
+// 头像图片
 let meHeadImg = new Image();
 meHeadImg.src = "img/lm.png";   // 狸猫 的头像
 
 let herHeadImg = new Image();
 herHeadImg.src = "img/zzl.png"; // 小琳 的头像
+
+// 抱抱合照
+let hugImg = new Image();
+hugImg.src = "img/hug.png";
 
 function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.save();
@@ -885,11 +831,13 @@ function drawDefaultHead(ctx2, x, y, r, label) {
   ctx2.restore();
 }
 
+// 角色：狸猫在地上跑，小琳悬浮
 const 狸猫 = { x: 120, y: 0, vy: 0, width: 40, height: 60, onGround: false };
 const 小琳 = { x: 260, y: 0, vy: 0, width: 40, height: 60, onGround: false };
+let hoverOffsetY = 80; // 小琳离地高度
 let obstacles = [];
 
-// ★★ 关键：确保一开始就给 canvas 一个正常尺寸，并算出 groundY
+// 计算画布尺寸 & 地面高度
 function resizeGameCanvas() {
   if (!gameCanvas) return;
   const rect = gameCanvas.getBoundingClientRect();
@@ -904,31 +852,34 @@ function resizeGameCanvas() {
   gameCanvas.height = height;
   groundY = gameCanvas.height - 40;
 }
-
-// 进页面就先算一次尺寸
 resizeGameCanvas();
-// 窗口尺寸变化时也重新适配
 window.addEventListener("resize", resizeGameCanvas);
 
 function resetGame() {
-  // 防止极端情况：每次重置前再算一次尺寸
   resizeGameCanvas();
 
   gameRunning = false;
+  gameFinished = false;
   lastTime = 0;
   gap = 500;
+
   狸猫.y = groundY - 狸猫.height;
-  zl.y = groundY - zl.height;
-  狸猫.vy = zl.vy = 0;
-  狸猫.onGround = zl.onGround = true;
+  狸猫.vy = 0;
+  狸猫.onGround = true;
+
+  // 小琳 悬浮在半空，不受重力影响
+  小琳.y = groundY - 小琳.height - hoverOffsetY;
+  小琳.vy = 0;
+  小琳.onGround = false;
+
   obstacles = [];
-  gameStatus.textContent = "准备好了就点“开始游戏”，按空格一起跳跃～";
+  gameStatus.textContent = "准备好了就点“开始游戏”，按空格让 狸猫 跳跃去追小琳～";
 }
 resetGame();
 
 function spawnObstacle() {
-  const width = 10 + Math.random() * 8;     // 24~32 像素
-  const height = 16 + Math.random() * 10;   // 22~32 像素
+  const width = 10 + Math.random() * 8;
+  const height = 16 + Math.random() * 10;
   obstacles.push({
     x: gameCanvas.width + 40 + Math.random() * 80,
     y: groundY - height,
@@ -938,18 +889,14 @@ function spawnObstacle() {
   });
 }
 
-
 let obstacleTimer = 0;
 const obstacleInterval = 1400;
 
+// 只让 狸猫 跳，小琳 不跳
 function jump() {
   if (狸猫.onGround) {
     狸猫.vy = -340;
     狸猫.onGround = false;
-  }
-  if (zl.onGround) {
-    zl.vy = -340;
-    zl.onGround = false;
   }
 }
 
@@ -960,26 +907,29 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-// 手机点击跳跃（iOS Safari 也支持）
 gameCanvas.addEventListener("touchstart", () => {
-  jump();
+  if (gameRunning) jump();
 });
-
 gameCanvas.addEventListener("mousedown", () => {
-  jump();
+  if (gameRunning) jump();
 });
 
 function updateGame(dt) {
   const g = 900;
-  [狸猫, zl].forEach((ch) => {
-    ch.vy += g * dt;
-    ch.y += ch.vy * dt;
-    if (ch.y + ch.height >= groundY) {
-      ch.y = groundY - ch.height;
-      ch.vy = 0;
-      ch.onGround = true;
-    }
-  });
+
+  // 只对 狸猫 做重力与落地判定
+  狸猫.vy += g * dt;
+  狸猫.y += 狸猫.vy * dt;
+  if (狸猫.y + 狸猫.height >= groundY) {
+    狸猫.y = groundY - 狸猫.height;
+    狸猫.vy = 0;
+    狸猫.onGround = true;
+  }
+
+  // 小琳 悬浮：给一点小幅度上下漂浮的效果
+  const floatAmp = 6;
+  const floatSpeed = 2;
+  小琳.y = groundY - 小琳.height - hoverOffsetY + Math.sin(performance.now() * 0.001 * floatSpeed) * floatAmp;
 
   obstacles.forEach((ob) => {
     ob.x -= worldSpeed * dt;
@@ -1005,53 +955,69 @@ function updateGame(dt) {
 
   const chaseSpeed = 20;
   gap -= chaseSpeed * dt;
-  if (gap <= 10) {
-    gameStatus.textContent = "狸猫 终于追到 小琳 啦，奖励一个大大大拥抱！🤍";
+
+  if (gap <= 10 && !gameFinished) {
+    gap = 10;
+    gameFinished = true;
     gameRunning = false;
+    gameStatus.textContent = "狸猫 终于追到 小琳 啦，奖励一个大大大拥抱！🤍";
+
+    // 从底部冒出爱心粒子
+    triggerBottomHearts();
   }
 }
 
-function drawCharacter(ch, color, headImg, label) {
-  const cx = ch.x + ch.width / 2;      // 身体中心 x
-  const footY = ch.y + ch.height;      // 脚底 y
-  const torsoTop = footY - 40;         // 身体上端
-  const torsoMid = (torsoTop + footY) / 2;
+// 画角色：支持身体旋转角度
+function drawCharacter(ch, color, headImg, label, angleRad = 0) {
+  const cx = ch.x + ch.width / 2;
+  const footY = ch.y + ch.height;
 
-  // 画身体（细线）
+  const torsoLen = 32;
+  const legLen = 16;
+  const armLen = 18;
+
+  // 身体
   gctx.save();
   gctx.strokeStyle = color;
   gctx.lineWidth = 3;
+  gctx.translate(cx, footY);
+  gctx.rotate(angleRad);
 
   // 躯干
   gctx.beginPath();
-  gctx.moveTo(cx, torsoTop);
-  gctx.lineTo(cx, footY - 8);
+  gctx.moveTo(0, -torsoLen);
+  gctx.lineTo(0, 0);
   gctx.stroke();
 
-  // 手臂（略微张开）
+  // 双臂
+  const armY = -torsoLen * 0.6;
   gctx.beginPath();
-  gctx.moveTo(cx, torsoMid);
-  gctx.lineTo(cx - 12, torsoMid + 6);
-  gctx.moveTo(cx, torsoMid);
-  gctx.lineTo(cx + 12, torsoMid + 6);
+  gctx.moveTo(0, armY);
+  gctx.lineTo(-armLen, armY + 6);
+  gctx.moveTo(0, armY);
+  gctx.lineTo(armLen, armY + 6);
   gctx.stroke();
 
   // 双腿
   gctx.beginPath();
-  gctx.moveTo(cx, footY - 8);
-  gctx.lineTo(cx - 10, footY);
-  gctx.moveTo(cx, footY - 8);
-  gctx.lineTo(cx + 10, footY);
+  gctx.moveTo(0, 0);
+  gctx.lineTo(-legLen, legLen * 0.8);
+  gctx.moveTo(0, 0);
+  gctx.lineTo(legLen, legLen * 0.8);
   gctx.stroke();
 
   gctx.restore();
 
-  // 头像（用图片裁成圆，不存在时用默认 狸猫 / ZL）
+  // 计算旋转后头像的位置
   const headRadius = 18;
-  const headX = cx;
-  const headY = torsoTop - headRadius + 4;
+  const hxLocal = 0;
+  const hyLocal = -torsoLen - headRadius + 4;
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+  const headX = cx + hxLocal * cosA - hyLocal * sinA;
+  const headY = footY + hxLocal * sinA + hyLocal * cosA;
 
-  if (headImg && headImg.complete) {
+  if (headImg && headImg.complete && headImg.naturalWidth > 0) {
     gctx.save();
     gctx.beginPath();
     gctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
@@ -1070,7 +1036,6 @@ function drawCharacter(ch, color, headImg, label) {
   }
 }
 
-
 function drawGame() {
   gctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
@@ -1085,27 +1050,48 @@ function drawGame() {
   });
 
   // 根据 gap 动态调整两个人在画布上的距离
-  const maxGap = 160;                              // 逻辑上的最大“距离”
+  const maxGap = 160;
   const gapClamped = Math.max(0, Math.min(maxGap, gap));
-  const distRatio = gapClamped / maxGap;           // gap 越大，distRatio 越接近 1
-  const baseGapPx = 80;                            // 最小像素间距
-  const extraGapPx = 220;                          // 还能在画布上拉开的最大距离
+  const distRatio = gapClamped / maxGap;
+  const baseGapPx = 80;
+  const extraGapPx = 220;
 
   // 狸猫 固定在画布左 1/5 处
   狸猫.x = gameCanvas.width * 0.2;
   // 小琳 的 x 随 gap 变化
-  zl.x = 狸猫.x + baseGapPx + extraGapPx * distRatio;
+  小琳.x = 狸猫.x + baseGapPx + extraGapPx * distRatio;
 
-  // 画两个人
-  drawCharacter(狸猫, "#ff7b9c", meHeadImg, "狸猫");
-  drawCharacter(zl, "#ff9bb3", herHeadImg, "ZL");
+  if (!gameFinished) {
+    // 正在追逐：画两个人
+    drawCharacter(狸猫, "#ff7b9c", meHeadImg, "狸猫", 0);
+    // 小琳 悬浮 + 身体朝飞行方向倾斜 45°
+    drawCharacter(小琳, "#ff9bb3", herHeadImg, "ZL", -Math.PI / 4);
+  } else {
+    // 已经追到：不再画跑动小人，改画抱抱合照
+    if (hugImg.complete && hugImg.naturalWidth > 0) {
+      const ratio = hugImg.naturalWidth > 0
+        ? hugImg.naturalHeight / hugImg.naturalWidth
+        : 1;
+      const imgW = gameCanvas.width * 0.45;
+      const imgH = imgW * ratio;
+      const x = (gameCanvas.width - imgW) / 2;
+      const y = groundY - imgH - 12;
+      gctx.drawImage(hugImg, x, y, imgW, imgH);
+    } else {
+      // 图片还没加载完时的兜底文字
+      gctx.font = "20px system-ui";
+      gctx.fillStyle = "#ff7b9c";
+      gctx.textAlign = "center";
+      gctx.fillText("狸猫 和 小琳 抱在一起啦 🤍", gameCanvas.width / 2, groundY - 40);
+    }
+  }
 
   // 顶部进度条：gap 越小，追上进度越高
   const barWidth = 200;
   const barHeight = 10;
   const barX = gameCanvas.width - barWidth - 16;
   const barY = 16;
-  const catchRatio = 1 - gapClamped / maxGap;      // 0~1
+  const catchRatio = 1 - gapClamped / maxGap;
 
   gctx.fillStyle = "rgba(0,0,0,0.08)";
   gctx.fillRect(barX, barY, barWidth, barHeight);
@@ -1115,7 +1101,6 @@ function drawGame() {
   gctx.fillStyle = "#555";
   gctx.fillText("追上进度", barX, barY - 4);
 }
-
 
 function gameLoop(timestamp) {
   if (!gameRunning) return;
@@ -1131,13 +1116,14 @@ function gameLoop(timestamp) {
 startGameBtn.addEventListener("click", () => {
   resetGame();
   gameRunning = true;
-  gameStatus.textContent = "游戏开始！按空格跳跃，不要让 狸猫 被绊倒～";
+  gameStatus.textContent = "游戏开始！按空格让 狸猫 跳跃，不要被绊倒～";
   lastTime = 0;
   requestAnimationFrame(gameLoop);
 });
 
 // 初始静态画面
 drawGame();
+
 
 
 // ======================================================
