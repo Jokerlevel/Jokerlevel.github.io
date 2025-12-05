@@ -1,9 +1,5 @@
 // ======================================================
-// Supabase 初始化
-// ======================================================
-const { createClient } = supabase;
-// ======================================================
-// 0. 网站密码锁
+// 0. 网站密码锁（不依赖 Supabase，保证一定能跑）
 // ======================================================
 const SITE_PASSWORD = "13141314zzl";
 
@@ -73,15 +69,57 @@ function setupPasswordGate() {
   pwInput.focus();
 }
 
+// 一进页面就先跑密码锁
 setupPasswordGate();
 
+// ======================================================
+// 1. Supabase 初始化（使用 window.supabase，全局对象）
+// ======================================================
 
 // ★★★ 把下面两行改成你自己的项目配置 ★★★
 const supabaseUrl = "https://hhabcapddorjuhwxouwt.supabase.co"; // Project URL
 const supabaseAnonKey = "sb_publishable_Yw0qjmTciWxdWMF3Z3zb1Q__E54t4eK"; // anon public key
 // ★★★ 填好即可 ★★★
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 这里不用 import，而是从 window.supabase 上拿 createClient
+let supabase = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+    console.log("Supabase 初始化成功");
+  } else {
+    console.warn("window.supabase 不存在，Supabase 功能会不可用");
+  }
+} catch (e) {
+  console.error("Supabase 初始化失败：", e);
+}
+
+// ======================================================
+// 通用：页面切换 & 首页按钮跳转
+// ======================================================
+document.querySelectorAll(".nav-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.target;
+
+    document.querySelectorAll(".nav-btn").forEach((b) => {
+      b.classList.toggle("active", b === btn);
+    });
+    document.querySelectorAll(".page").forEach((page) => {
+      page.classList.toggle("page--active", page.id === target);
+    });
+  });
+});
+
+document.querySelectorAll(".primary-btn[data-target]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const targetId = btn.dataset.target;
+    const targetNavBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
+    if (targetNavBtn) {
+      targetNavBtn.click();
+    }
+  });
+});
+
 
 // ======================================================
 // 通用：页面切换 & 首页按钮跳转
